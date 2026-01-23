@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { db, type Habit, type HabitLog } from '../store/db'
+import { db, type Habit } from '../store/db'
 import { format } from 'date-fns'
 
 export interface HabitWithStatus extends Habit {
