@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
+const SCOPES = 'https://www.googleapis.com/auth/calendar.events'
 
 export interface CalendarEvent {
   id: string
@@ -11,6 +11,14 @@ export interface CalendarEvent {
   isAllDay: boolean
   location?: string
   color?: string
+}
+
+export interface NewEventData {
+  title: string
+  date: string // YYYY-MM-DD
+  startTime?: string // HH:mm (optional for all-day)
+  endTime?: string // HH:mm (optional for all-day)
+  isAllDay: boolean
 }
 
 interface GoogleCalendarState {
@@ -63,6 +71,8 @@ export function useGoogleCalendar(): GoogleCalendarState & {
   signIn: () => void
   signOut: () => void
   refresh: () => void
+  addEvent: (eventData: NewEventData) => Promise<boolean>
+  accessToken: string | null
 } {
   const [state, setState] = useState<GoogleCalendarState>({
     events: [],
@@ -80,7 +90,7 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     try {
       const now = new Date()
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7) // Next 7 days
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7)
 
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
@@ -97,7 +107,6 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       )
 
       if (response.status === 401) {
-        // Token expired
         localStorage.removeItem('google_calendar_token')
         setAccessToken(null)
         setState(prev => ({
@@ -132,13 +141,72 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     }
   }, [])
 
+  // Add event to Google Calendar
+  const addEvent = useCallback(async (eventData: NewEventData): Promise<boolean> => {
+    if (!accessToken) return false
+
+    try {
+      const event: any = {
+        summary: eventData.title,
+      }
+
+      if (eventData.isAllDay) {
+        event.start = { date: eventData.date }
+        // For all-day events, end date should be the next day
+        const endDate = new Date(eventData.date)
+        endDate.setDate(endDate.getDate() + 1)
+        event.end = { date: endDate.toISOString().split('T')[0] }
+      } else {
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        event.start = {
+          dateTime: `${eventData.date}T${eventData.startTime}:00`,
+          timeZone
+        }
+        event.end = {
+          dateTime: `${eventData.date}T${eventData.endTime}:00`,
+          timeZone
+        }
+      }
+
+      const response = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(event)
+        }
+      )
+
+      if (response.status === 401) {
+        localStorage.removeItem('google_calendar_token')
+        setAccessToken(null)
+        setState(prev => ({ ...prev, isSignedIn: false }))
+        return false
+      }
+
+      if (!response.ok) {
+        throw new Error('이벤트를 추가할 수 없습니다')
+      }
+
+      // Refresh events after adding
+      await fetchEvents(accessToken)
+      return true
+    } catch (error) {
+      console.error('Failed to add event:', error)
+      return false
+    }
+  }, [accessToken, fetchEvents])
+
   // Initialize Google Identity Services
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: null // No error, just not configured
+        error: null
       }))
       return
     }
@@ -158,7 +226,6 @@ export function useGoogleCalendar(): GoogleCalendarState & {
         })
         setTokenClient(client)
 
-        // If we have a stored token, try to use it
         if (accessToken) {
           fetchEvents(accessToken)
         } else {
@@ -198,5 +265,5 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     }
   }, [accessToken, fetchEvents])
 
-  return { ...state, signIn, signOut, refresh }
+  return { ...state, signIn, signOut, refresh, addEvent, accessToken }
 }
