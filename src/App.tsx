@@ -10,6 +10,7 @@ import { NotesCard } from './components/NotesCard'
 import { SettingsModal } from './components/SettingsModal'
 import { WeatherCard } from './components/WeatherCard'
 import { CalendarCard } from './components/CalendarCard'
+import { WeeklyStreakCard } from './components/WeeklyStreakCard'
 
 function App() {
   const { dayState, settings, weeklyStudyMinutes, isLoading, actions } = useDayState()
@@ -87,6 +88,9 @@ function App() {
             dayState={dayState}
             onUpdateNotes={actions.updateNotes}
           />
+
+          {/* Row 4: Weekly Streak */}
+          <WeeklyStreakCard />
         </div>
       </main>
 
