@@ -1,10 +1,27 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGoogleCalendar, type CalendarEvent, type NewEventData } from '../hooks/useGoogleCalendar'
-import { format, isToday, isTomorrow, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks } from 'date-fns'
+import {
+  format,
+  isToday,
+  isTomorrow,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  isSameMonth,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths
+} from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+
+type ViewMode = 'week' | 'month'
 
 function formatEventTime(event: CalendarEvent): string {
   if (event.isAllDay) return '종일'
@@ -180,18 +197,42 @@ function AddEventModal({
 
 export function CalendarPage() {
   const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent, toggleEventComplete } = useGoogleCalendar()
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const [viewMode, setViewMode] = useState<ViewMode>('week')
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
+  // Week view days
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const weekDays = eachDayOfInterval({
-    start: currentWeekStart,
-    end: endOfWeek(currentWeekStart, { weekStartsOn: 1 })
+    start: weekStart,
+    end: endOfWeek(currentDate, { weekStartsOn: 1 })
   })
 
-  const goToPreviousWeek = () => setCurrentWeekStart(prev => subWeeks(prev, 1))
-  const goToNextWeek = () => setCurrentWeekStart(prev => addWeeks(prev, 1))
-  const goToToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
+  // Month view days
+  const monthStart = startOfMonth(currentDate)
+  const monthEnd = endOfMonth(currentDate)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  const monthDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+
+  const goToPrevious = () => {
+    if (viewMode === 'week') {
+      setCurrentDate(prev => subWeeks(prev, 1))
+    } else {
+      setCurrentDate(prev => subMonths(prev, 1))
+    }
+  }
+
+  const goToNext = () => {
+    if (viewMode === 'week') {
+      setCurrentDate(prev => addWeeks(prev, 1))
+    } else {
+      setCurrentDate(prev => addMonths(prev, 1))
+    }
+  }
+
+  const goToToday = () => setCurrentDate(new Date())
 
   const getEventsForDay = (day: Date) => {
     return events.filter(event => isSameDay(event.start, day))
@@ -268,12 +309,39 @@ export function CalendarPage() {
     <div className="min-h-screen bg-gray-900">
       <Header onSignOut={signOut} onRefresh={refresh} />
 
-      {/* Week Navigation */}
+      {/* Navigation */}
       <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3">
+          {/* View Mode Toggle */}
+          <div className="flex justify-center mb-3">
+            <div className="inline-flex bg-gray-800 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('week')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'week'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                주간
+              </button>
+              <button
+                onClick={() => setViewMode('month')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'month'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                월간
+              </button>
+            </div>
+          </div>
+
+          {/* Date Navigation */}
           <div className="flex items-center justify-between">
             <button
-              onClick={goToPreviousWeek}
+              onClick={goToPrevious}
               className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +351,10 @@ export function CalendarPage() {
 
             <div className="flex items-center gap-3">
               <span className="text-white font-medium">
-                {format(currentWeekStart, 'yyyy년 M월', { locale: ko })}
+                {viewMode === 'week'
+                  ? format(weekStart, 'yyyy년 M월', { locale: ko })
+                  : format(currentDate, 'yyyy년 M월', { locale: ko })
+                }
               </span>
               <button
                 onClick={goToToday}
@@ -294,7 +365,7 @@ export function CalendarPage() {
             </div>
 
             <button
-              onClick={goToNextWeek}
+              onClick={goToNext}
               className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +378,8 @@ export function CalendarPage() {
 
       {/* Calendar Grid */}
       <div className="max-w-4xl mx-auto p-4">
-        <div className="grid grid-cols-7 gap-2 mb-4">
+        {/* Day Headers */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
           {['월', '화', '수', '목', '금', '토', '일'].map((day, i) => (
             <div key={day} className={`text-center text-sm font-medium py-2 ${
               i >= 5 ? 'text-red-400' : 'text-gray-400'
@@ -317,76 +389,151 @@ export function CalendarPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {weekDays.map((day, index) => {
-            const dayEvents = getEventsForDay(day)
-            const isCurrentDay = isToday(day)
-            const label = getDateLabel(day)
+        {/* Week View */}
+        {viewMode === 'week' && (
+          <div className="grid grid-cols-7 gap-2">
+            {weekDays.map((day, index) => {
+              const dayEvents = getEventsForDay(day)
+              const isCurrentDay = isToday(day)
+              const label = getDateLabel(day)
 
-            return (
-              <div
-                key={day.toISOString()}
-                className={`min-h-[120px] rounded-xl p-2 transition-all ${
-                  isCurrentDay
-                    ? 'bg-blue-500/20 ring-2 ring-blue-500'
-                    : 'bg-gray-800 hover:bg-gray-750'
-                } ${index >= 5 ? 'bg-gray-800/50' : ''}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1">
-                    <span className={`text-lg font-bold ${
-                      isCurrentDay ? 'text-blue-400' : index >= 5 ? 'text-red-400' : 'text-white'
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={`min-h-[120px] rounded-xl p-2 transition-all ${
+                    isCurrentDay
+                      ? 'bg-blue-500/20 ring-2 ring-blue-500'
+                      : 'bg-gray-800 hover:bg-gray-750'
+                  } ${index >= 5 ? 'bg-gray-800/50' : ''}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1">
+                      <span className={`text-lg font-bold ${
+                        isCurrentDay ? 'text-blue-400' : index >= 5 ? 'text-red-400' : 'text-white'
+                      }`}>
+                        {format(day, 'd')}
+                      </span>
+                      {label && (
+                        <span className="text-xs text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
+                          {label}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleAddEvent(day)}
+                      className="w-6 h-6 rounded-full hover:bg-gray-700 text-gray-500 hover:text-white flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    {dayEvents.slice(0, 3).map(event => {
+                      const isCompleted = event.title.startsWith('✅ ')
+                      const displayTitle = isCompleted ? event.title.replace('✅ ', '') : event.title
+
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={() => toggleEventComplete(event.id, event.title)}
+                          className={`w-full text-left text-xs p-1.5 rounded-lg truncate transition-all ${
+                            isCompleted
+                              ? 'bg-gray-700/50 text-gray-500 line-through'
+                              : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                          }`}
+                        >
+                          {!event.isAllDay && (
+                            <span className="font-mono mr-1">{format(event.start, 'HH:mm')}</span>
+                          )}
+                          {displayTitle}
+                        </button>
+                      )
+                    })}
+                    {dayEvents.length > 3 && (
+                      <div className="text-xs text-gray-500 text-center">
+                        +{dayEvents.length - 3}개 더
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Month View */}
+        {viewMode === 'month' && (
+          <div className="grid grid-cols-7 gap-1">
+            {monthDays.map((day, index) => {
+              const dayEvents = getEventsForDay(day)
+              const isCurrentDay = isToday(day)
+              const isCurrentMonth = isSameMonth(day, currentDate)
+              const dayOfWeek = (index % 7)
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  onClick={() => handleAddEvent(day)}
+                  className={`min-h-[80px] rounded-lg p-1.5 transition-all cursor-pointer ${
+                    isCurrentDay
+                      ? 'bg-blue-500/20 ring-2 ring-blue-500'
+                      : isCurrentMonth
+                        ? 'bg-gray-800 hover:bg-gray-750'
+                        : 'bg-gray-800/30'
+                  } ${dayOfWeek >= 5 && isCurrentMonth ? 'bg-gray-800/70' : ''}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-sm font-medium ${
+                      !isCurrentMonth
+                        ? 'text-gray-600'
+                        : isCurrentDay
+                          ? 'text-blue-400'
+                          : dayOfWeek >= 5
+                            ? 'text-red-400'
+                            : 'text-white'
                     }`}>
                       {format(day, 'd')}
                     </span>
-                    {label && (
-                      <span className="text-xs text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
-                        {label}
-                      </span>
+                    {dayEvents.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleAddEvent(day)}
-                    className="w-6 h-6 rounded-full hover:bg-gray-700 text-gray-500 hover:text-white flex items-center justify-center"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
-                </div>
 
-                <div className="space-y-1">
-                  {dayEvents.slice(0, 3).map(event => {
-                    const isCompleted = event.title.startsWith('✅ ')
-                    const displayTitle = isCompleted ? event.title.replace('✅ ', '') : event.title
+                  <div className="space-y-0.5">
+                    {dayEvents.slice(0, 2).map(event => {
+                      const isCompleted = event.title.startsWith('✅ ')
+                      const displayTitle = isCompleted ? event.title.replace('✅ ', '') : event.title
 
-                    return (
-                      <button
-                        key={event.id}
-                        onClick={() => toggleEventComplete(event.id, event.title)}
-                        className={`w-full text-left text-xs p-1.5 rounded-lg truncate transition-all ${
-                          isCompleted
-                            ? 'bg-gray-700/50 text-gray-500 line-through'
-                            : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
-                        }`}
-                      >
-                        {!event.isAllDay && (
-                          <span className="font-mono mr-1">{format(event.start, 'HH:mm')}</span>
-                        )}
-                        {displayTitle}
-                      </button>
-                    )
-                  })}
-                  {dayEvents.length > 3 && (
-                    <div className="text-xs text-gray-500 text-center">
-                      +{dayEvents.length - 3}개 더
-                    </div>
-                  )}
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleEventComplete(event.id, event.title)
+                          }}
+                          className={`w-full text-left text-[10px] px-1 py-0.5 rounded truncate transition-all ${
+                            isCompleted
+                              ? 'bg-gray-700/50 text-gray-500 line-through'
+                              : 'bg-blue-500/30 text-blue-300 hover:bg-blue-500/40'
+                          }`}
+                        >
+                          {displayTitle}
+                        </button>
+                      )
+                    })}
+                    {dayEvents.length > 2 && (
+                      <div className="text-[10px] text-gray-500 text-center">
+                        +{dayEvents.length - 2}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Today's Events Detail */}
         <div className="mt-6">
