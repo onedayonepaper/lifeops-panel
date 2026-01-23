@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import { useDayState } from './hooks/useDayState'
 import { useNightMode } from './hooks/useNightMode'
 import { TopBar } from './components/TopBar'
@@ -8,8 +9,9 @@ import { SettingsModal } from './components/SettingsModal'
 import { CalendarCard } from './components/CalendarCard'
 import { WeeklyStreakCard } from './components/WeeklyStreakCard'
 import { HabitTrackerCard } from './components/HabitTrackerCard'
+import { CalendarPage } from './pages/CalendarPage'
 
-function App() {
+function HomePage() {
   const { dayState, settings, weeklyStudyMinutes, isLoading, actions } = useDayState()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -77,6 +79,15 @@ function App() {
         settings={settings}
       />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/calendar" element={<CalendarPage />} />
+    </Routes>
   )
 }
 

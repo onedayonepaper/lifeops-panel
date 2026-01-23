@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useGoogleCalendar, type CalendarEvent, type NewEventData } from '../hooks/useGoogleCalendar'
 import { format, isToday, isTomorrow, differenceInMinutes } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -312,14 +313,20 @@ export function CalendarCard() {
       <div className="bg-gray-800 rounded-2xl p-4 shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <Link
+            to="/calendar"
+            className="text-lg font-bold text-white flex items-center gap-2 hover:text-blue-400 transition-colors"
+          >
             📅 캘린더
             {todayEvents.length > 0 && (
               <span className="text-sm font-normal text-blue-400">
                 오늘 {todayEvents.length}개
               </span>
             )}
-          </h2>
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowAddModal(true)}
