@@ -40,12 +40,12 @@ function EventItem({
   const displayTitle = isCompleted ? event.title.replace('✅ ', '') : event.title
 
   return (
-    <div className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${
+    <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all ${
       isCompleted ? 'opacity-50' : isUpcoming ? 'bg-blue-500/10' : 'hover:bg-gray-700/50'
     }`}>
       <button
         onClick={() => onToggleComplete(event.id, event.title)}
-        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+        className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
           isCompleted
             ? 'bg-emerald-500 border-emerald-500 text-white'
             : 'border-gray-500 hover:border-blue-400'
@@ -58,20 +58,20 @@ function EventItem({
         )}
       </button>
 
-      <span className={`text-sm font-mono w-12 flex-shrink-0 ${
+      <span className={`text-xs sm:text-sm font-mono flex-shrink-0 ${
         isCompleted ? 'text-gray-500' : isUpcoming ? 'text-blue-400' : 'text-gray-400'
       }`}>
         {formatEventTime(event)}
       </span>
 
-      <span className={`flex-1 truncate ${
+      <span className={`flex-1 truncate text-sm sm:text-base ${
         isCompleted ? 'text-gray-500 line-through' : 'text-gray-200'
       }`}>
         {displayTitle}
       </span>
 
       {timeUntil && !isCompleted && (
-        <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded">
+        <span className="hidden sm:inline text-xs text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded">
           {timeUntil}
         </span>
       )}
@@ -97,12 +97,12 @@ function QuickAddInput({ onAdd }: { onAdd: (title: string) => void }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="빠른 일정 추가..."
-        className="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white placeholder-gray-500 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+        className="flex-1 min-w-0 px-3 py-2.5 sm:py-2 rounded-lg bg-gray-700 text-white placeholder-gray-500 text-sm outline-none focus:ring-1 focus:ring-blue-500"
       />
       <button
         type="submit"
         disabled={!title.trim()}
-        className="px-3 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600"
+        className="px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg bg-blue-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 flex-shrink-0"
       >
         추가
       </button>
@@ -315,11 +315,12 @@ export function CalendarCard() {
         <div className="flex items-center justify-between mb-3">
           <Link
             to="/calendar"
-            className="text-lg font-bold text-white flex items-center gap-2 hover:text-blue-400 transition-colors"
+            className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2 hover:text-blue-400 transition-colors"
           >
-            📅 캘린더
+            <span>📅</span>
+            <span className="hidden sm:inline">캘린더</span>
             {todayEvents.length > 0 && (
-              <span className="text-sm font-normal text-blue-400">
+              <span className="text-xs sm:text-sm font-normal text-blue-400">
                 오늘 {todayEvents.length}개
               </span>
             )}
@@ -327,10 +328,10 @@ export function CalendarCard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             <button
               onClick={() => setShowAddModal(true)}
-              className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
               title="상세 추가"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,7 +340,7 @@ export function CalendarCard() {
             </button>
             <button
               onClick={refresh}
-              className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
               title="새로고침"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +349,7 @@ export function CalendarCard() {
             </button>
             <button
               onClick={signOut}
-              className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
               title="로그아웃"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
