@@ -22,25 +22,26 @@ export function RunCard({
   const isRestDay = dayState.runPlan === 'REST'
 
   return (
-    <div className={`rounded-2xl p-4 shadow-lg card-hover ${
+    <div className={`rounded-2xl p-3 sm:p-4 shadow-lg card-hover ${
       dayState.runDone
         ? 'bg-gradient-to-br from-green-500 to-emerald-600'
         : 'bg-white dark:bg-gray-800'
     }`}>
-      <h2 className={`text-lg font-bold mb-3 flex items-center gap-2 ${
+      <h2 className={`text-base sm:text-lg font-bold mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 ${
         dayState.runDone ? 'text-white' : 'text-gray-900 dark:text-white'
       }`}>
-        <span className="text-xl">🏃</span>
-        러닝 / 운동
+        <span className="text-lg sm:text-xl">🏃</span>
+        <span className="hidden sm:inline">러닝 / 운동</span>
+        <span className="sm:hidden">운동</span>
       </h2>
 
       {/* Plan Selection */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3 sm:mb-4">
         {RUN_PLANS.map((plan) => (
           <button
             key={plan.value}
             onClick={() => onUpdateRunPlan(plan.value)}
-            className={`py-3 px-2 rounded-xl text-center touch-target transition-all ${
+            className={`py-2 sm:py-3 px-1.5 sm:px-2 rounded-xl text-center touch-target transition-all ${
               dayState.runPlan === plan.value
                 ? dayState.runDone
                   ? 'bg-white/30 text-white ring-2 ring-white/50'
@@ -50,14 +51,14 @@ export function RunCard({
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            <div className="text-xl mb-1">{plan.emoji}</div>
-            <div className="text-xs font-medium">{plan.label}</div>
+            <div className="text-lg sm:text-xl mb-0.5 sm:mb-1">{plan.emoji}</div>
+            <div className="text-[10px] sm:text-xs font-medium">{plan.label}</div>
           </button>
         ))}
       </div>
 
       {/* Current Plan Info */}
-      <div className={`p-3 rounded-xl mb-4 ${
+      <div className={`p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 ${
         dayState.runDone
           ? 'bg-white/10'
           : 'bg-gray-100 dark:bg-gray-700'
@@ -65,8 +66,8 @@ export function RunCard({
         <div className={`text-center ${
           dayState.runDone ? 'text-white' : 'text-gray-600 dark:text-gray-300'
         }`}>
-          <span className="text-2xl mr-2">{currentPlan.emoji}</span>
-          <span className="font-medium">{currentPlan.description}</span>
+          <span className="text-xl sm:text-2xl mr-1.5 sm:mr-2">{currentPlan.emoji}</span>
+          <span className="text-sm sm:text-base font-medium">{currentPlan.description}</span>
         </div>
       </div>
 
@@ -74,7 +75,7 @@ export function RunCard({
       {!isRestDay && (
         <button
           onClick={onToggleRunDone}
-          className={`w-full py-3 px-4 rounded-xl font-semibold touch-target ${
+          className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-semibold text-sm sm:text-base touch-target ${
             dayState.runDone
               ? 'bg-white/20 hover:bg-white/30 text-white'
               : 'bg-emerald-500 hover:bg-emerald-600 text-white'
@@ -85,7 +86,7 @@ export function RunCard({
       )}
 
       {isRestDay && (
-        <div className={`text-center py-3 ${
+        <div className={`text-center py-2 sm:py-3 text-sm sm:text-base ${
           dayState.runDone ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
         }`}>
           쉬는 것도 운동의 일부예요 💪

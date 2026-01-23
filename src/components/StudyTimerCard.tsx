@@ -143,27 +143,28 @@ export function StudyTimerCard({
   const config = getModeConfig()
 
   return (
-    <div className={`rounded-2xl p-4 shadow-lg bg-gradient-to-br ${config.gradient} text-white`}>
+    <div className={`rounded-2xl p-3 sm:p-4 shadow-lg bg-gradient-to-br ${config.gradient} text-white`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <span className="text-xl">{config.emoji}</span>
-          뽀모도로
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <h2 className="text-base sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2">
+          <span className="text-lg sm:text-xl">{config.emoji}</span>
+          <span className="hidden sm:inline">뽀모도로</span>
+          <span className="sm:hidden">타이머</span>
         </h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm bg-white/20 px-2 py-1 rounded-lg">
+          <span className="text-xs sm:text-sm bg-white/20 px-2 py-1 rounded-lg">
             {sessionCount} 세션
           </span>
         </div>
       </div>
 
       {/* Mode Tabs */}
-      <div className="flex gap-1 mb-4 bg-white/10 p-1 rounded-xl">
+      <div className="flex gap-1 mb-3 sm:mb-4 bg-white/10 p-1 rounded-xl">
         {(['work', 'shortBreak', 'longBreak'] as const).map((m) => (
           <button
             key={m}
             onClick={() => switchMode(m)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
               mode === m ? 'bg-white/30' : 'hover:bg-white/10'
             }`}
           >
@@ -173,71 +174,73 @@ export function StudyTimerCard({
       </div>
 
       {/* Timer Display */}
-      <div className="relative mb-4">
+      <div className="relative mb-3 sm:mb-4">
         {/* Progress Ring Background */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <svg className="w-40 h-40 -rotate-90">
+          <svg className="w-28 h-28 sm:w-40 sm:h-40 -rotate-90">
             <circle
-              cx="80"
-              cy="80"
-              r="70"
+              cx="50%"
+              cy="50%"
+              r="42%"
               fill="none"
               stroke="rgba(255,255,255,0.2)"
-              strokeWidth="8"
+              strokeWidth="6"
+              className="sm:stroke-[8]"
             />
             <circle
-              cx="80"
-              cy="80"
-              r="70"
+              cx="50%"
+              cy="50%"
+              r="42%"
               fill="none"
               stroke="white"
-              strokeWidth="8"
+              strokeWidth="6"
+              className="sm:stroke-[8]"
               strokeLinecap="round"
               strokeDasharray={440}
               strokeDashoffset={440 - (440 * progress) / 100}
-              className="transition-all duration-1000"
+              style={{ transition: 'stroke-dashoffset 1s' }}
             />
           </svg>
         </div>
 
         {/* Timer Text */}
-        <div className="text-center py-8">
-          <div className="text-5xl font-mono font-bold">
+        <div className="text-center py-5 sm:py-8">
+          <div className="text-4xl sm:text-5xl font-mono font-bold">
             {formatSecondsToTimer(seconds)}
           </div>
-          <div className="text-sm mt-2 text-white/80">
+          <div className="text-xs sm:text-sm mt-1 sm:mt-2 text-white/80">
             {isRunning ? `${config.label} 중...` : config.label}
           </div>
         </div>
       </div>
 
       {/* Control Buttons */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3 sm:mb-4">
         {!isRunning ? (
           <button
             onClick={startTimer}
-            className={`flex-1 py-3 px-4 rounded-xl ${config.buttonColor} text-white font-semibold`}
+            className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl ${config.buttonColor} text-white font-semibold text-sm sm:text-base`}
           >
             {seconds === DURATIONS[mode] ? '시작' : '계속'}
           </button>
         ) : (
           <button
             onClick={pauseTimer}
-            className="flex-1 py-3 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold"
+            className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-sm sm:text-base"
           >
             일시정지
           </button>
         )}
         <button
           onClick={resetTimer}
-          className="py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold"
+          className="py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm sm:text-base"
         >
           리셋
         </button>
       </div>
 
       {/* Stats */}
-      <div className="flex justify-between text-sm text-white/80">
+      <div className="flex justify-between text-xs sm:text-sm text-white/80">
         <span>오늘: {dayState.studyMinutesDone}분</span>
         <span>이번 주: {formatWeeklyHours(weeklyStudyMinutes)}</span>
       </div>

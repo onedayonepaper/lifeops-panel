@@ -105,20 +105,21 @@ export function HabitTrackerCard() {
 
   return (
     <>
-      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 shadow-lg text-white">
+      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-3 sm:p-4 shadow-lg text-white">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <span className="text-xl">✨</span>
-            오늘의 습관
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2">
+            <span className="text-lg sm:text-xl">✨</span>
+            <span className="hidden sm:inline">오늘의 습관</span>
+            <span className="sm:hidden">습관</span>
           </h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm bg-white/20 px-2 py-1 rounded-lg">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xs sm:text-sm bg-white/20 px-2 py-1 rounded-lg">
               {completedCount}/{totalCount}
             </span>
             <button
               onClick={() => setEditMode(!editMode)}
-              className={`p-2 rounded-xl transition-colors ${
+              className={`p-1.5 sm:p-2 rounded-xl transition-colors ${
                 editMode ? 'bg-white/30' : 'bg-white/20 hover:bg-white/30'
               }`}
             >
@@ -131,7 +132,7 @@ export function HabitTrackerCard() {
         </div>
 
         {/* Progress Bar */}
-        <div className="h-2 bg-white/20 rounded-full mb-4 overflow-hidden">
+        <div className="h-1.5 sm:h-2 bg-white/20 rounded-full mb-3 sm:mb-4 overflow-hidden">
           <div
             className="h-full bg-white rounded-full transition-all duration-500"
             style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
@@ -140,8 +141,8 @@ export function HabitTrackerCard() {
 
         {/* Habits Grid */}
         {habits.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-white/70 mb-3">습관을 추가해보세요!</p>
+          <div className="text-center py-4 sm:py-6">
+            <p className="text-white/70 mb-3 text-sm sm:text-base">습관을 추가해보세요!</p>
             <button
               onClick={() => setShowAddModal(true)}
               className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-medium"
@@ -150,12 +151,12 @@ export function HabitTrackerCard() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-3 gap-1.5 sm:gap-2">
             {habits.map((habit) => (
               <button
                 key={habit.id}
                 onClick={() => editMode ? undefined : toggleHabit(habit.id!)}
-                className={`relative p-3 rounded-xl transition-all ${
+                className={`relative p-2 sm:p-3 rounded-xl transition-all ${
                   habit.completedToday
                     ? 'bg-white/30 scale-95'
                     : 'bg-white/10 hover:bg-white/20'
@@ -172,15 +173,15 @@ export function HabitTrackerCard() {
                     ✕
                   </button>
                 )}
-                <div className={`text-2xl mb-1 ${habit.completedToday ? 'opacity-50' : ''}`}>
+                <div className={`text-xl sm:text-2xl mb-0.5 sm:mb-1 ${habit.completedToday ? 'opacity-50' : ''}`}>
                   {habit.emoji}
                 </div>
-                <div className={`text-xs truncate ${habit.completedToday ? 'line-through opacity-50' : ''}`}>
+                <div className={`text-[10px] sm:text-xs truncate ${habit.completedToday ? 'line-through opacity-50' : ''}`}>
                   {habit.name}
                 </div>
                 {habit.completedToday && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl">✓</span>
+                    <span className="text-xl sm:text-2xl">✓</span>
                   </div>
                 )}
               </button>
@@ -189,10 +190,10 @@ export function HabitTrackerCard() {
             {/* Add Button */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="p-3 rounded-xl bg-white/10 hover:bg-white/20 border-2 border-dashed border-white/30 flex flex-col items-center justify-center"
+              className="p-2 sm:p-3 rounded-xl bg-white/10 hover:bg-white/20 border-2 border-dashed border-white/30 flex flex-col items-center justify-center"
             >
-              <div className="text-2xl mb-1">+</div>
-              <div className="text-xs">추가</div>
+              <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">+</div>
+              <div className="text-[10px] sm:text-xs">추가</div>
             </button>
           </div>
         )}
