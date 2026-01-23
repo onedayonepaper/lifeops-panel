@@ -9,6 +9,7 @@ import { RunCard } from './components/RunCard'
 import { NotesCard } from './components/NotesCard'
 import { SettingsModal } from './components/SettingsModal'
 import { WeatherCard } from './components/WeatherCard'
+import { CalendarCard } from './components/CalendarCard'
 
 function App() {
   const { dayState, settings, weeklyStudyMinutes, isLoading, actions } = useDayState()
@@ -45,8 +46,11 @@ function App() {
       {/* Main Content */}
       <main className="p-4 pb-8 max-w-2xl mx-auto">
         <div className="grid gap-4">
-          {/* Weather */}
-          <WeatherCard />
+          {/* Weather & Calendar */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <WeatherCard />
+            <CalendarCard />
+          </div>
 
           {/* Row 1: Top3 & OneAction */}
           <div className="grid md:grid-cols-2 gap-4">
