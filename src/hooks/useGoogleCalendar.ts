@@ -89,11 +89,18 @@ function parseEvent(event: any): CalendarEvent {
   }
 }
 
+export interface BatchEventData {
+  title: string
+  startTime: string // HH:mm
+  endTime: string   // HH:mm
+}
+
 export function useGoogleCalendar(): GoogleCalendarState & {
   signIn: () => void
   signOut: () => void
   refresh: () => void
   addEvent: (eventData: NewEventData) => Promise<boolean>
+  addBatchEvents: (date: string, events: BatchEventData[]) => Promise<{ success: number; failed: number }>
   toggleEventComplete: (eventId: string, currentTitle: string) => Promise<boolean>
   accessToken: string | null
 } {
@@ -332,6 +339,63 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     }
   }, [accessToken, fetchEvents])
 
+  // Batch add events to Google Calendar
+  const addBatchEvents = useCallback(async (date: string, events: BatchEventData[]): Promise<{ success: number; failed: number }> => {
+    if (!accessToken) return { success: 0, failed: events.length }
+
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    let success = 0
+    let failed = 0
+
+    for (const eventData of events) {
+      try {
+        // Handle midnight crossing (e.g., 23:30-00:00)
+        let endDate = date
+        if (eventData.endTime === '00:00' || eventData.endTime < eventData.startTime) {
+          const nextDay = new Date(date)
+          nextDay.setDate(nextDay.getDate() + 1)
+          endDate = nextDay.toISOString().split('T')[0]
+        }
+
+        const event = {
+          summary: eventData.title,
+          start: {
+            dateTime: `${date}T${eventData.startTime}:00`,
+            timeZone
+          },
+          end: {
+            dateTime: `${endDate}T${eventData.endTime}:00`,
+            timeZone
+          }
+        }
+
+        const response = await fetch(
+          'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(event)
+          }
+        )
+
+        if (response.ok) {
+          success++
+        } else {
+          failed++
+        }
+      } catch {
+        failed++
+      }
+    }
+
+    // Refresh events after batch add
+    await fetchEvents(accessToken)
+    return { success, failed }
+  }, [accessToken, fetchEvents])
+
   // Toggle event complete status (add/remove ✅ from title)
   const toggleEventComplete = useCallback(async (eventId: string, currentTitle: string): Promise<boolean> => {
     if (!accessToken) return false
@@ -372,5 +436,5 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     }
   }, [accessToken, fetchEvents])
 
-  return { ...state, signIn, signOut, refresh, addEvent, toggleEventComplete, accessToken }
+  return { ...state, signIn, signOut, refresh, addEvent, addBatchEvents, toggleEventComplete, accessToken }
 }

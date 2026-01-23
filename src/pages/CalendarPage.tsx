@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGoogleCalendar, type CalendarEvent, type NewEventData } from '../hooks/useGoogleCalendar'
+import { DAILY_ROUTINE } from '../data/dailyRoutine'
 import {
   format,
   isToday,
@@ -195,12 +196,129 @@ function AddEventModal({
   )
 }
 
+function ImportRoutineModal({
+  isOpen,
+  onClose,
+  date,
+  onDateChange,
+  onImport,
+  isImporting,
+  result
+}: {
+  isOpen: boolean
+  onClose: () => void
+  date: string
+  onDateChange: (date: string) => void
+  onImport: () => void
+  isImporting: boolean
+  result: { success: number; failed: number } | null
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && !isImporting && onClose()}
+    >
+      <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[80vh] overflow-y-auto">
+        <h3 className="text-xl font-bold text-white mb-2">📋 일일 루틴 가져오기</h3>
+        <p className="text-gray-400 text-sm mb-5">
+          {DAILY_ROUTINE.length}개의 일정을 선택한 날짜에 추가합니다.
+        </p>
+
+        <div className="mb-5">
+          <label className="text-sm text-gray-400 mb-2 block">날짜 선택</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => onDateChange(e.target.value)}
+            disabled={isImporting}
+            className="w-full px-4 py-3 rounded-xl bg-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          />
+        </div>
+
+        {/* Routine Preview */}
+        <div className="mb-5 max-h-48 overflow-y-auto bg-gray-900 rounded-xl p-3">
+          <div className="text-xs text-gray-500 mb-2">미리보기</div>
+          <div className="space-y-1">
+            {DAILY_ROUTINE.slice(0, 8).map((item, i) => (
+              <div key={i} className="text-sm text-gray-300 flex gap-2">
+                <span className="text-blue-400 font-mono w-24 flex-shrink-0">
+                  {item.startTime}–{item.endTime}
+                </span>
+                <span className="truncate">{item.title}</span>
+              </div>
+            ))}
+            {DAILY_ROUTINE.length > 8 && (
+              <div className="text-sm text-gray-500">
+                ... 외 {DAILY_ROUTINE.length - 8}개
+              </div>
+            )}
+          </div>
+        </div>
+
+        {result && (
+          <div className={`mb-5 p-3 rounded-xl ${
+            result.failed === 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {result.failed === 0
+              ? `✅ ${result.success}개 일정이 추가되었습니다!`
+              : `⚠️ ${result.success}개 성공, ${result.failed}개 실패`
+            }
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={isImporting}
+            className="flex-1 py-3 rounded-xl bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 disabled:opacity-50"
+          >
+            {result ? '닫기' : '취소'}
+          </button>
+          {!result && (
+            <button
+              onClick={onImport}
+              disabled={isImporting}
+              className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isImporting ? (
+                <>
+                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  추가 중...
+                </>
+              ) : (
+                '가져오기'
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function CalendarPage() {
-  const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent, toggleEventComplete } = useGoogleCalendar()
+  const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent, addBatchEvents, toggleEventComplete } = useGoogleCalendar()
   const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importDate, setImportDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [isImporting, setIsImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null)
+
+  const handleImportRoutine = async () => {
+    setIsImporting(true)
+    setImportResult(null)
+    const result = await addBatchEvents(importDate, DAILY_ROUTINE)
+    setImportResult(result)
+    setIsImporting(false)
+  }
 
   // Week view days
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
@@ -307,7 +425,7 @@ export function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Header onSignOut={signOut} onRefresh={refresh} />
+      <Header onSignOut={signOut} onRefresh={refresh} onImportRoutine={() => setShowImportModal(true)} />
 
       {/* Navigation */}
       <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-10">
@@ -670,11 +788,24 @@ export function CalendarPage() {
         onAdd={addEvent}
         initialDate={selectedDate || undefined}
       />
+
+      <ImportRoutineModal
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false)
+          setImportResult(null)
+        }}
+        date={importDate}
+        onDateChange={setImportDate}
+        onImport={handleImportRoutine}
+        isImporting={isImporting}
+        result={importResult}
+      />
     </div>
   )
 }
 
-function Header({ onSignOut, onRefresh }: { onSignOut?: () => void; onRefresh?: () => void }) {
+function Header({ onSignOut, onRefresh, onImportRoutine }: { onSignOut?: () => void; onRefresh?: () => void; onImportRoutine?: () => void }) {
   return (
     <div className="p-4 border-b border-gray-800">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -685,15 +816,26 @@ function Header({ onSignOut, onRefresh }: { onSignOut?: () => void; onRefresh?: 
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>홈으로</span>
+          <span className="hidden sm:inline">홈으로</span>
         </Link>
 
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
           <span>📅</span>
           캘린더
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {onImportRoutine && (
+            <button
+              onClick={onImportRoutine}
+              className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+              title="루틴 가져오기"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </button>
+          )}
           {onRefresh && (
             <button
               onClick={onRefresh}
