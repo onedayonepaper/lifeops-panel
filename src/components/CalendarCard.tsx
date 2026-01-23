@@ -30,38 +30,74 @@ function getTimeUntilEvent(event: CalendarEvent): string | null {
   return null
 }
 
-function EventItem({ event }: { event: CalendarEvent }) {
+function EventItem({
+  event,
+  onToggleComplete
+}: {
+  event: CalendarEvent
+  onToggleComplete: (eventId: string, title: string) => void
+}) {
   const timeUntil = getTimeUntilEvent(event)
   const isUpcoming = timeUntil !== null
+  const isCompleted = event.title.startsWith('✅ ')
+  const displayTitle = isCompleted ? event.title.replace('✅ ', '') : event.title
 
   return (
     <div className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-      isUpcoming
-        ? 'bg-emerald-500/20 border border-emerald-500/30'
-        : 'bg-white/5 hover:bg-white/10'
+      isCompleted
+        ? 'bg-gray-500/20 opacity-60'
+        : isUpcoming
+          ? 'bg-emerald-500/20 border border-emerald-500/30'
+          : 'bg-white/5 hover:bg-white/10'
     }`}>
+      {/* Complete Button */}
+      <button
+        onClick={() => onToggleComplete(event.id, event.title)}
+        className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+          isCompleted
+            ? 'bg-emerald-500 border-emerald-500 text-white'
+            : 'border-gray-500 hover:border-emerald-400'
+        }`}
+      >
+        {isCompleted && (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </button>
+
       {/* Time */}
       <div className={`text-base font-mono w-14 flex-shrink-0 text-center ${
-        event.isAllDay
-          ? 'text-purple-300'
-          : isUpcoming
-            ? 'text-emerald-300 font-semibold'
-            : 'text-gray-400'
+        isCompleted
+          ? 'text-gray-500'
+          : event.isAllDay
+            ? 'text-purple-300'
+            : isUpcoming
+              ? 'text-emerald-300 font-semibold'
+              : 'text-gray-400'
       }`}>
         {formatEventTime(event)}
       </div>
 
       {/* Divider */}
       <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-        isUpcoming ? 'bg-emerald-400' : 'bg-gray-600'
+        isCompleted
+          ? 'bg-gray-600'
+          : isUpcoming
+            ? 'bg-emerald-400'
+            : 'bg-gray-600'
       }`} />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className={`font-medium text-base truncate ${
-          isUpcoming ? 'text-white' : 'text-gray-200'
+          isCompleted
+            ? 'text-gray-500 line-through'
+            : isUpcoming
+              ? 'text-white'
+              : 'text-gray-200'
         }`}>
-          {event.title}
+          {displayTitle}
         </div>
         {event.location && (
           <div className="text-sm text-gray-400 truncate flex items-center gap-1 mt-0.5">
@@ -71,11 +107,159 @@ function EventItem({ event }: { event: CalendarEvent }) {
       </div>
 
       {/* Time until */}
-      {timeUntil && (
+      {timeUntil && !isCompleted && (
         <div className="text-sm text-emerald-400 font-semibold flex-shrink-0 bg-emerald-500/20 px-2 py-1 rounded-lg">
           {timeUntil}
         </div>
       )}
+    </div>
+  )
+}
+
+function FileUploadModal({
+  isOpen,
+  onClose,
+  onUpload
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onUpload: (events: NewEventData[]) => Promise<number>
+}) {
+  const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  if (!isOpen) return null
+
+  const parseCSV = (text: string): NewEventData[] => {
+    const lines = text.trim().split('\n')
+    const events: NewEventData[] = []
+
+    // Skip header if exists
+    const startIdx = lines[0].toLowerCase().includes('title') ? 1 : 0
+
+    for (let i = startIdx; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim())
+      if (cols.length >= 2) {
+        events.push({
+          title: cols[0],
+          date: cols[1],
+          startTime: cols[2] || undefined,
+          endTime: cols[3] || undefined,
+          isAllDay: !cols[2] || cols[4]?.toLowerCase() === 'true'
+        })
+      }
+    }
+    return events
+  }
+
+  const parseJSON = (text: string): NewEventData[] => {
+    const data = JSON.parse(text)
+    const arr = Array.isArray(data) ? data : [data]
+    return arr.map((item: any) => ({
+      title: item.title || item.summary || '',
+      date: item.date,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      isAllDay: item.isAllDay ?? (!item.startTime)
+    }))
+  }
+
+  const handleFile = async (file: File) => {
+    setIsUploading(true)
+    setResult(null)
+
+    try {
+      const text = await file.text()
+      let events: NewEventData[]
+
+      if (file.name.endsWith('.json')) {
+        events = parseJSON(text)
+      } else {
+        events = parseCSV(text)
+      }
+
+      if (events.length === 0) {
+        setResult('파싱할 일정이 없습니다')
+        return
+      }
+
+      const successCount = await onUpload(events)
+      setResult(`${successCount}/${events.length}개 일정 추가 완료!`)
+    } catch (e) {
+      setResult('파일 파싱 실패. 형식을 확인해주세요.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleFile(file)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-gray-800 rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <span>📁</span> 파일로 일정 추가
+        </h3>
+
+        <div
+          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            isDragging ? 'border-violet-400 bg-violet-500/20' : 'border-gray-600'
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+        >
+          <div className="text-4xl mb-3">📄</div>
+          <p className="text-gray-300 mb-2">파일을 드래그하거나</p>
+          <label className="inline-block px-4 py-2 rounded-lg bg-violet-500 text-white cursor-pointer hover:bg-violet-600">
+            파일 선택
+            <input
+              type="file"
+              accept=".csv,.json"
+              onChange={handleFileInput}
+              className="hidden"
+            />
+          </label>
+          <p className="text-xs text-gray-500 mt-3">CSV 또는 JSON 형식</p>
+        </div>
+
+        {isUploading && (
+          <div className="mt-4 text-center text-violet-400">업로드 중...</div>
+        )}
+
+        {result && (
+          <div className={`mt-4 text-center ${result.includes('완료') ? 'text-emerald-400' : 'text-red-400'}`}>
+            {result}
+          </div>
+        )}
+
+        <div className="mt-4 p-3 bg-gray-700/50 rounded-xl text-xs text-gray-400">
+          <p className="font-semibold mb-1">CSV 형식:</p>
+          <code className="block text-gray-300">title,date,startTime,endTime</code>
+          <code className="block text-gray-300">회의,2025-01-24,10:00,11:00</code>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full mt-4 py-3 rounded-xl bg-gray-700 text-gray-300 font-medium hover:bg-gray-600"
+        >
+          닫기
+        </button>
+      </div>
     </div>
   )
 }
@@ -223,8 +407,18 @@ function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]
 }
 
 export function CalendarCard() {
-  const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent } = useGoogleCalendar()
+  const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent, toggleEventComplete } = useGoogleCalendar()
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
+
+  const handleBulkUpload = async (newEvents: NewEventData[]): Promise<number> => {
+    let successCount = 0
+    for (const event of newEvents) {
+      const success = await addEvent(event)
+      if (success) successCount++
+    }
+    return successCount
+  }
 
   // Not configured
   if (!GOOGLE_CLIENT_ID) {
@@ -333,6 +527,15 @@ export function CalendarCard() {
               </svg>
             </button>
             <button
+              onClick={() => setShowUploadModal(true)}
+              className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+              aria-label="파일 업로드"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </button>
+            <button
               onClick={refresh}
               className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
               aria-label="새로고침"
@@ -381,7 +584,11 @@ export function CalendarCard() {
                 </div>
                 <div className="space-y-2">
                   {dayEvents.map(event => (
-                    <EventItem key={event.id} event={event} />
+                    <EventItem
+                      key={event.id}
+                      event={event}
+                      onToggleComplete={toggleEventComplete}
+                    />
                   ))}
                 </div>
               </div>
@@ -395,6 +602,13 @@ export function CalendarCard() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={addEvent}
+      />
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUpload={handleBulkUpload}
       />
     </>
   )

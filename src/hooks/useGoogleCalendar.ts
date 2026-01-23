@@ -32,7 +32,23 @@ interface GoogleCalendarState {
 function loadGoogleScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.getElementById('google-identity-script')) {
-      resolve()
+      // Script already exists, check if google object is available
+      if ((window as any).google?.accounts?.oauth2) {
+        resolve()
+      } else {
+        // Script exists but not loaded yet, wait for it
+        const checkGoogle = setInterval(() => {
+          if ((window as any).google?.accounts?.oauth2) {
+            clearInterval(checkGoogle)
+            resolve()
+          }
+        }, 100)
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(checkGoogle)
+          reject(new Error('Google script timeout'))
+        }, 5000)
+      }
       return
     }
 
@@ -41,8 +57,14 @@ function loadGoogleScript(): Promise<void> {
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true
     script.defer = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Google script load failed'))
+    script.onload = () => {
+      console.log('[Calendar] Google script loaded')
+      resolve()
+    }
+    script.onerror = (e) => {
+      console.error('[Calendar] Google script load error:', e)
+      reject(new Error('Google script load failed'))
+    }
     document.head.appendChild(script)
   })
 }
@@ -72,6 +94,7 @@ export function useGoogleCalendar(): GoogleCalendarState & {
   signOut: () => void
   refresh: () => void
   addEvent: (eventData: NewEventData) => Promise<boolean>
+  toggleEventComplete: (eventId: string, currentTitle: string) => Promise<boolean>
   accessToken: string | null
 } {
   const [state, setState] = useState<GoogleCalendarState>({
@@ -84,6 +107,9 @@ export function useGoogleCalendar(): GoogleCalendarState & {
   const [accessToken, setAccessToken] = useState<string | null>(() =>
     localStorage.getItem('google_calendar_token')
   )
+
+  // Check if user has ever logged in before (for silent refresh)
+  const hasLoggedInBefore = localStorage.getItem('google_calendar_has_logged_in') === 'true'
 
   // Fetch events from Google Calendar API
   const fetchEvents = useCallback(async (token: string) => {
@@ -202,7 +228,10 @@ export function useGoogleCalendar(): GoogleCalendarState & {
 
   // Initialize Google Identity Services
   useEffect(() => {
+    console.log('[Calendar] Init - Client ID:', GOOGLE_CLIENT_ID ? 'SET' : 'MISSING')
+
     if (!GOOGLE_CLIENT_ID) {
+      console.log('[Calendar] No client ID, skipping Google init')
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -211,28 +240,51 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       return
     }
 
+    let client: any = null
+
     loadGoogleScript()
       .then(() => {
-        const client = (window as any).google.accounts.oauth2.initTokenClient({
+        console.log('[Calendar] Script loaded, initializing client...')
+        client = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
           scope: SCOPES,
           callback: (response: any) => {
+            console.log('[Calendar] OAuth callback:', response.error || 'success')
             if (response.access_token) {
               localStorage.setItem('google_calendar_token', response.access_token)
+              localStorage.setItem('google_calendar_has_logged_in', 'true')
               setAccessToken(response.access_token)
               fetchEvents(response.access_token)
+            } else if (response.error) {
+              // Silent refresh failed, user needs to click login
+              console.log('[Calendar] Silent refresh failed:', response.error)
+              setState(prev => ({ ...prev, isLoading: false }))
             }
           }
         })
         setTokenClient(client)
+        console.log('[Calendar] Token client initialized')
 
         if (accessToken) {
+          console.log('[Calendar] Existing token found, fetching events...')
           fetchEvents(accessToken)
+        } else if (hasLoggedInBefore) {
+          // Only try silent refresh if user has logged in before
+          console.log('[Calendar] Attempting silent token refresh...')
+          try {
+            client.requestAccessToken({ prompt: '' })
+          } catch (e) {
+            console.log('[Calendar] Silent refresh not available')
+            setState(prev => ({ ...prev, isLoading: false }))
+          }
         } else {
+          // First time user - show login button immediately
+          console.log('[Calendar] First time user, showing login button')
           setState(prev => ({ ...prev, isLoading: false }))
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[Calendar] Init error:', err)
         setState(prev => ({
           ...prev,
           isLoading: false,
@@ -249,6 +301,7 @@ export function useGoogleCalendar(): GoogleCalendarState & {
 
   const signOut = useCallback(() => {
     localStorage.removeItem('google_calendar_token')
+    localStorage.removeItem('google_calendar_has_logged_in')
     setAccessToken(null)
     setState({
       events: [],
@@ -265,5 +318,45 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     }
   }, [accessToken, fetchEvents])
 
-  return { ...state, signIn, signOut, refresh, addEvent, accessToken }
+  // Toggle event complete status (add/remove ✅ from title)
+  const toggleEventComplete = useCallback(async (eventId: string, currentTitle: string): Promise<boolean> => {
+    if (!accessToken) return false
+
+    try {
+      const isCompleted = currentTitle.startsWith('✅ ')
+      const newTitle = isCompleted
+        ? currentTitle.replace('✅ ', '')
+        : `✅ ${currentTitle}`
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ summary: newTitle })
+        }
+      )
+
+      if (response.status === 401) {
+        localStorage.removeItem('google_calendar_token')
+        setAccessToken(null)
+        setState(prev => ({ ...prev, isSignedIn: false }))
+        return false
+      }
+
+      if (!response.ok) return false
+
+      // Refresh events after toggling
+      await fetchEvents(accessToken)
+      return true
+    } catch (error) {
+      console.error('Failed to toggle event:', error)
+      return false
+    }
+  }, [accessToken, fetchEvents])
+
+  return { ...state, signIn, signOut, refresh, addEvent, toggleEventComplete, accessToken }
 }

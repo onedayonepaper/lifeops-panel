@@ -75,16 +75,12 @@ export function useWeather(): WeatherState & { refresh: () => void } {
     setState(prev => ({ ...prev, isLoading: true, error: null }))
 
     try {
-      // Get user's location
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000 // Cache for 5 minutes
-        })
-      })
-
-      const { latitude, longitude } = position.coords
+      // Get location from IP
+      const ipResponse = await fetch('https://ipapi.co/json/')
+      if (!ipResponse.ok) throw new Error('위치를 확인할 수 없습니다')
+      const ipData = await ipResponse.json()
+      const { latitude, longitude } = ipData
+      console.log('[Weather] IP location:', latitude, longitude)
 
       // Fetch weather from Open-Meteo
       const weatherResponse = await fetch(
@@ -113,15 +109,12 @@ export function useWeather(): WeatherState & { refresh: () => void } {
         isLoading: false,
         error: null
       })
-    } catch (error) {
-      const errorMessage = error instanceof GeolocationPositionError
-        ? '위치 권한을 허용해주세요'
-        : '날씨 정보를 가져올 수 없습니다'
-
+    } catch (error: any) {
+      console.error('[Weather] Error:', error)
       setState({
         data: null,
         isLoading: false,
-        error: errorMessage
+        error: error?.message || '날씨 정보를 가져올 수 없습니다'
       })
     }
   }

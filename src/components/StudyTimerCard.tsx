@@ -1,5 +1,4 @@
-import { useEffect, useCallback } from 'react'
-import { useTimer } from '../hooks/useTimer'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { formatSecondsToTimer } from '../utils/time'
 import type { DayState } from '../store/db'
 
@@ -9,24 +8,101 @@ interface StudyTimerCardProps {
   onAddStudyMinutes: (minutes: number) => Promise<void>
 }
 
-const STUDY_DURATION_MINUTES = 60
+type TimerMode = 'work' | 'shortBreak' | 'longBreak'
+
+const DURATIONS = {
+  work: 25 * 60,        // 25분
+  shortBreak: 5 * 60,   // 5분
+  longBreak: 15 * 60    // 15분
+}
 
 export function StudyTimerCard({
   dayState,
   weeklyStudyMinutes,
   onAddStudyMinutes
 }: StudyTimerCardProps) {
-  const { seconds, isRunning, start, pause, reset, isComplete } = useTimer(STUDY_DURATION_MINUTES)
+  const [mode, setMode] = useState<TimerMode>('work')
+  const [seconds, setSeconds] = useState(DURATIONS.work)
+  const [isRunning, setIsRunning] = useState(false)
+  const [sessionCount, setSessionCount] = useState(0)
+  const intervalRef = useRef<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const handleComplete = useCallback(async () => {
-    await onAddStudyMinutes(STUDY_DURATION_MINUTES)
-  }, [onAddStudyMinutes])
-
+  // Initialize audio
   useEffect(() => {
-    if (isComplete) {
-      handleComplete()
+    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQFq2+LJskJlbpfQzIRaHBhgveTnqHIPOpLk68yWYiZYqezwzJJYJWOq5N/FhEoYVara3rmJUzFPnN/u26huIjeMwu7hs4pXMFmRt+jgq39GJG2W1O7gtX5VOU2c3OTUq3Y8O4jV7+W+gF8rW5LT7eC7gFQvYZ3Z')
+  }, [])
+
+  const playSound = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {})
     }
-  }, [isComplete, handleComplete])
+  }, [])
+
+  const startTimer = useCallback(() => {
+    setIsRunning(true)
+  }, [])
+
+  const pauseTimer = useCallback(() => {
+    setIsRunning(false)
+  }, [])
+
+  const resetTimer = useCallback(() => {
+    setIsRunning(false)
+    setSeconds(DURATIONS[mode])
+  }, [mode])
+
+  const switchMode = useCallback((newMode: TimerMode) => {
+    setMode(newMode)
+    setSeconds(DURATIONS[newMode])
+    setIsRunning(false)
+  }, [])
+
+  // Timer tick
+  useEffect(() => {
+    if (isRunning) {
+      intervalRef.current = window.setInterval(() => {
+        setSeconds(prev => {
+          if (prev <= 1) {
+            playSound()
+
+            // Handle timer complete
+            if (mode === 'work') {
+              // Add study time
+              onAddStudyMinutes(25)
+              const newSessionCount = sessionCount + 1
+              setSessionCount(newSessionCount)
+
+              // Every 4 sessions, take a long break
+              if (newSessionCount % 4 === 0) {
+                setMode('longBreak')
+                return DURATIONS.longBreak
+              } else {
+                setMode('shortBreak')
+                return DURATIONS.shortBreak
+              }
+            } else {
+              // Break is over, start work
+              setMode('work')
+              return DURATIONS.work
+            }
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [isRunning, mode, sessionCount, playSound, onAddStudyMinutes])
 
   const formatWeeklyHours = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -36,85 +112,132 @@ export function StudyTimerCard({
     return `${hours}시간 ${mins}분`
   }
 
+  const progress = ((DURATIONS[mode] - seconds) / DURATIONS[mode]) * 100
+
+  const getModeConfig = () => {
+    switch (mode) {
+      case 'work':
+        return {
+          emoji: isRunning ? '🔥' : '🍅',
+          label: '집중',
+          gradient: 'from-red-500 to-orange-600',
+          buttonColor: 'bg-red-600 hover:bg-red-700'
+        }
+      case 'shortBreak':
+        return {
+          emoji: '☕',
+          label: '짧은 휴식',
+          gradient: 'from-emerald-500 to-teal-600',
+          buttonColor: 'bg-emerald-600 hover:bg-emerald-700'
+        }
+      case 'longBreak':
+        return {
+          emoji: '🌴',
+          label: '긴 휴식',
+          gradient: 'from-blue-500 to-indigo-600',
+          buttonColor: 'bg-blue-600 hover:bg-blue-700'
+        }
+    }
+  }
+
+  const config = getModeConfig()
+
   return (
-    <div className={`rounded-2xl p-4 shadow-lg card-hover ${
-      isRunning
-        ? 'bg-gradient-to-br from-amber-500 to-orange-600'
-        : isComplete
-        ? 'bg-gradient-to-br from-emerald-500 to-green-600'
-        : 'bg-white dark:bg-gray-800'
-    }`}>
-      <h2 className={`text-lg font-bold mb-3 flex items-center gap-2 ${
-        isRunning || isComplete ? 'text-white' : 'text-gray-900 dark:text-white'
-      }`}>
-        <span className="text-xl">{isComplete ? '✅' : isRunning ? '🔥' : '📚'}</span>
-        공부 타이머
-      </h2>
+    <div className={`rounded-2xl p-4 shadow-lg bg-gradient-to-br ${config.gradient} text-white`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <span className="text-xl">{config.emoji}</span>
+          뽀모도로
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm bg-white/20 px-2 py-1 rounded-lg">
+            {sessionCount} 세션
+          </span>
+        </div>
+      </div>
+
+      {/* Mode Tabs */}
+      <div className="flex gap-1 mb-4 bg-white/10 p-1 rounded-xl">
+        {(['work', 'shortBreak', 'longBreak'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => switchMode(m)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              mode === m ? 'bg-white/30' : 'hover:bg-white/10'
+            }`}
+          >
+            {m === 'work' ? '집중' : m === 'shortBreak' ? '짧은휴식' : '긴휴식'}
+          </button>
+        ))}
+      </div>
 
       {/* Timer Display */}
-      <div className={`text-center py-4 rounded-xl mb-4 ${
-        isRunning
-          ? 'bg-white/20 backdrop-blur'
-          : isComplete
-          ? 'bg-white/20 backdrop-blur'
-          : 'bg-gray-100 dark:bg-gray-700'
-      }`}>
-        <div className={`text-5xl font-mono font-bold ${
-          isRunning ? 'text-white animate-pulse-slow' : isComplete ? 'text-white' : 'text-gray-900 dark:text-white'
-        }`}>
-          {formatSecondsToTimer(seconds)}
+      <div className="relative mb-4">
+        {/* Progress Ring Background */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <svg className="w-40 h-40 -rotate-90">
+            <circle
+              cx="80"
+              cy="80"
+              r="70"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="8"
+            />
+            <circle
+              cx="80"
+              cy="80"
+              r="70"
+              fill="none"
+              stroke="white"
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={440}
+              strokeDashoffset={440 - (440 * progress) / 100}
+              className="transition-all duration-1000"
+            />
+          </svg>
         </div>
-        <div className={`text-sm mt-2 ${
-          isRunning || isComplete ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
-        }`}>
-          {isComplete ? '세션 완료!' : isRunning ? '집중 중...' : `${STUDY_DURATION_MINUTES}분 집중 세션`}
+
+        {/* Timer Text */}
+        <div className="text-center py-8">
+          <div className="text-5xl font-mono font-bold">
+            {formatSecondsToTimer(seconds)}
+          </div>
+          <div className="text-sm mt-2 text-white/80">
+            {isRunning ? `${config.label} 중...` : config.label}
+          </div>
         </div>
       </div>
 
       {/* Control Buttons */}
       <div className="flex gap-2 mb-4">
-        {!isRunning && !isComplete && (
+        {!isRunning ? (
           <button
-            onClick={start}
-            className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold touch-target"
+            onClick={startTimer}
+            className={`flex-1 py-3 px-4 rounded-xl ${config.buttonColor} text-white font-semibold`}
           >
-            시작
+            {seconds === DURATIONS[mode] ? '시작' : '계속'}
           </button>
-        )}
-        {isRunning && (
+        ) : (
           <button
-            onClick={pause}
-            className="flex-1 py-3 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold touch-target"
+            onClick={pauseTimer}
+            className="flex-1 py-3 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold"
           >
             일시정지
           </button>
         )}
-        {(isRunning || seconds < STUDY_DURATION_MINUTES * 60) && !isComplete && (
-          <button
-            onClick={reset}
-            className={`py-3 px-4 rounded-xl font-semibold touch-target ${
-              isRunning
-                ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            리셋
-          </button>
-        )}
-        {isComplete && (
-          <button
-            onClick={reset}
-            className="flex-1 py-3 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold touch-target"
-          >
-            한 번 더
-          </button>
-        )}
+        <button
+          onClick={resetTimer}
+          className="py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold"
+        >
+          리셋
+        </button>
       </div>
 
       {/* Stats */}
-      <div className={`flex justify-between text-sm ${
-        isRunning || isComplete ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
-      }`}>
+      <div className="flex justify-between text-sm text-white/80">
         <span>오늘: {dayState.studyMinutesDone}분</span>
         <span>이번 주: {formatWeeklyHours(weeklyStudyMinutes)}</span>
       </div>

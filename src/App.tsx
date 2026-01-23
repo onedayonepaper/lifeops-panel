@@ -2,15 +2,12 @@ import { useState } from 'react'
 import { useDayState } from './hooks/useDayState'
 import { useNightMode } from './hooks/useNightMode'
 import { TopBar } from './components/TopBar'
-import { Top3Card } from './components/Top3Card'
-import { OneActionCard } from './components/OneActionCard'
 import { StudyTimerCard } from './components/StudyTimerCard'
 import { RunCard } from './components/RunCard'
-import { NotesCard } from './components/NotesCard'
 import { SettingsModal } from './components/SettingsModal'
-import { WeatherCard } from './components/WeatherCard'
 import { CalendarCard } from './components/CalendarCard'
 import { WeeklyStreakCard } from './components/WeeklyStreakCard'
+import { HabitTrackerCard } from './components/HabitTrackerCard'
 
 function App() {
   const { dayState, settings, weeklyStudyMinutes, isLoading, actions } = useDayState()
@@ -48,49 +45,28 @@ function App() {
       {/* Main Content */}
       <main className="p-4 pb-8 max-w-2xl mx-auto">
         <div className="grid gap-4">
-          {/* Weather & Calendar */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <WeatherCard />
-            <CalendarCard />
-          </div>
+          {/* Calendar */}
+          <CalendarCard />
 
-          {/* Row 1: Top3 & OneAction */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <Top3Card
-              dayState={dayState}
-              onUpdateTop3={actions.updateTop3}
-              onToggleTop3Done={actions.toggleTop3Done}
-              onCopyFromYesterday={actions.copyFromYesterday}
-            />
-            <OneActionCard
-              dayState={dayState}
-              onUpdateOneAction={actions.updateOneAction}
-              onToggleOneActionDone={actions.toggleOneActionDone}
-            />
-          </div>
-
-          {/* Row 2: Study Timer & Run */}
+          {/* Pomodoro Timer & Habits */}
           <div className="grid md:grid-cols-2 gap-4">
             <StudyTimerCard
               dayState={dayState}
               weeklyStudyMinutes={weeklyStudyMinutes}
               onAddStudyMinutes={actions.addStudyMinutes}
             />
+            <HabitTrackerCard />
+          </div>
+
+          {/* Run & Weekly Streak */}
+          <div className="grid md:grid-cols-2 gap-4">
             <RunCard
               dayState={dayState}
               onUpdateRunPlan={actions.updateRunPlan}
               onToggleRunDone={actions.toggleRunDone}
             />
+            <WeeklyStreakCard />
           </div>
-
-          {/* Row 3: Notes */}
-          <NotesCard
-            dayState={dayState}
-            onUpdateNotes={actions.updateNotes}
-          />
-
-          {/* Row 4: Weekly Streak */}
-          <WeeklyStreakCard />
         </div>
       </main>
 

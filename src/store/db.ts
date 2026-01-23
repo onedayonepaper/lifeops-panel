@@ -26,10 +26,26 @@ export interface Settings {
   kioskMode: boolean
 }
 
+export interface Habit {
+  id?: number
+  name: string
+  emoji: string
+  createdAt: number
+}
+
+export interface HabitLog {
+  id?: number
+  habitId: number
+  date: string // YYYY-MM-DD
+  completed: boolean
+}
+
 // Database class
 class LifeOpsDB extends Dexie {
   dayState!: EntityTable<DayState, 'date'>
   settings!: EntityTable<Settings, 'id'>
+  habits!: EntityTable<Habit, 'id'>
+  habitLogs!: EntityTable<HabitLog, 'id'>
 
   constructor() {
     super('LifeOpsDB')
@@ -37,6 +53,13 @@ class LifeOpsDB extends Dexie {
     this.version(1).stores({
       dayState: 'date, createdAt, updatedAt',
       settings: 'id'
+    })
+
+    this.version(2).stores({
+      dayState: 'date, createdAt, updatedAt',
+      settings: 'id',
+      habits: '++id, createdAt',
+      habitLogs: '++id, habitId, date, [habitId+date]'
     })
   }
 }
