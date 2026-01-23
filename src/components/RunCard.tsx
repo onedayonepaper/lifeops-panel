@@ -22,7 +22,7 @@ export function RunCard({
   const isRestDay = dayState.runPlan === 'REST'
 
   return (
-    <div className={`rounded-2xl p-3 sm:p-4 shadow-lg card-hover ${
+    <div className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg card-hover ${
       dayState.runDone
         ? 'bg-gradient-to-br from-green-500 to-emerald-600'
         : 'bg-white dark:bg-gray-800'
@@ -36,7 +36,7 @@ export function RunCard({
       </h2>
 
       {/* Plan Selection */}
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+      <div className="grid grid-cols-4 gap-1 sm:gap-2 mb-3 sm:mb-4">
         {RUN_PLANS.map((plan) => (
           <button
             key={plan.value}

@@ -47,7 +47,7 @@ export function WeeklyStreakCard() {
 
   if (isLoading || !data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg">
+      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <div className="animate-pulse h-24 bg-gray-200 dark:bg-gray-700 rounded-xl" />
       </div>
     )

@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react'
 import { formatSecondsToTimer } from '../utils/time'
+import { notifyPomodoroComplete } from '../utils/notifications'
 import type { DayState } from '../store/db'
+import type { TimerRef } from '../App'
 
 interface StudyTimerCardProps {
   dayState: DayState
@@ -16,11 +18,11 @@ const DURATIONS = {
   longBreak: 15 * 60    // 15분
 }
 
-export function StudyTimerCard({
+export const StudyTimerCard = forwardRef<TimerRef, StudyTimerCardProps>(function StudyTimerCard({
   dayState,
   weeklyStudyMinutes,
   onAddStudyMinutes
-}: StudyTimerCardProps) {
+}, ref) {
   const [mode, setMode] = useState<TimerMode>('work')
   const [seconds, setSeconds] = useState(DURATIONS.work)
   const [isRunning, setIsRunning] = useState(false)
@@ -58,6 +60,18 @@ export function StudyTimerCard({
     setIsRunning(false)
   }, [])
 
+  // Expose toggle and reset methods via ref
+  useImperativeHandle(ref, () => ({
+    toggle: () => {
+      if (isRunning) {
+        pauseTimer()
+      } else {
+        startTimer()
+      }
+    },
+    reset: resetTimer
+  }), [isRunning, pauseTimer, startTimer, resetTimer])
+
   // Timer tick
   useEffect(() => {
     if (isRunning) {
@@ -65,6 +79,7 @@ export function StudyTimerCard({
         setSeconds(prev => {
           if (prev <= 1) {
             playSound()
+            notifyPomodoroComplete(mode)
 
             // Handle timer complete
             if (mode === 'work') {
@@ -143,7 +158,7 @@ export function StudyTimerCard({
   const config = getModeConfig()
 
   return (
-    <div className={`rounded-2xl p-3 sm:p-4 shadow-lg bg-gradient-to-br ${config.gradient} text-white`}>
+    <div className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg bg-gradient-to-br ${config.gradient} text-white`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <h2 className="text-base sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2">
@@ -164,7 +179,7 @@ export function StudyTimerCard({
           <button
             key={m}
             onClick={() => switchMode(m)}
-            className={`flex-1 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            className={`flex-1 min-w-0 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all truncate ${
               mode === m ? 'bg-white/30' : 'hover:bg-white/10'
             }`}
           >
@@ -246,4 +261,4 @@ export function StudyTimerCard({
       </div>
     </div>
   )
-}
+})

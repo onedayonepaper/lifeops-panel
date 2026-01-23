@@ -1,10 +1,23 @@
 @import "tailwindcss";
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
   --night-mode: 0;
 }
 
-html, body, #root {
+html {
+  height: auto;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+#root {
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -31,8 +44,15 @@ button, [role="button"], input[type="checkbox"] {
 
 /* Large touch targets */
 .touch-target {
-  min-height: 48px;
-  min-width: 48px;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 640px) {
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
 }
 
 /* Custom checkbox styling */
@@ -71,4 +91,20 @@ input[type="checkbox"] {
 
 .card-hover:active {
   transform: scale(0.98);
+}
+
+/* Toast slide-up animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
 }

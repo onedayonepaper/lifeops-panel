@@ -97,7 +97,7 @@ export function HabitTrackerCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 shadow-lg text-white">
+      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
         <div className="animate-pulse h-24 bg-white/20 rounded-xl" />
       </div>
     )

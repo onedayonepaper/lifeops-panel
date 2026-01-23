@@ -37,17 +37,17 @@ export function TopBar({ dayState, isNightMode, onSettingsClick, onRefreshClick 
   }
 
   return (
-    <div className={`flex items-center justify-between px-4 py-3 ${
+    <div className={`flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 ${
       isNightMode ? 'bg-gray-900' : 'bg-gray-800'
     } text-white`}>
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{getStatusIcon()}</span>
-        <div>
-          <div className="text-lg font-semibold">{date}</div>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <span className="text-xl sm:text-2xl">{getStatusIcon()}</span>
+        <div className="min-w-0">
+          <div className="text-xs sm:text-lg font-semibold whitespace-nowrap">{date}</div>
         </div>
       </div>
 
-      <div className="text-3xl font-mono font-light tracking-wider">
+      <div className="text-xl sm:text-3xl font-mono font-light tracking-wider">
         {time}
       </div>
 

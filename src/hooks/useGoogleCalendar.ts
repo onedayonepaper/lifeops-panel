@@ -95,6 +95,14 @@ export interface BatchEventData {
   endTime: string   // HH:mm
 }
 
+export interface UpdateEventData {
+  title?: string
+  date?: string
+  startTime?: string
+  endTime?: string
+  isAllDay?: boolean
+}
+
 export function useGoogleCalendar(): GoogleCalendarState & {
   signIn: () => void
   signOut: () => void
@@ -102,6 +110,8 @@ export function useGoogleCalendar(): GoogleCalendarState & {
   addEvent: (eventData: NewEventData) => Promise<boolean>
   addBatchEvents: (date: string, events: BatchEventData[]) => Promise<{ success: number; failed: number }>
   toggleEventComplete: (eventId: string, currentTitle: string) => Promise<boolean>
+  deleteEvent: (eventId: string) => Promise<boolean>
+  updateEvent: (eventId: string, data: UpdateEventData) => Promise<boolean>
   accessToken: string | null
 } {
   const [state, setState] = useState<GoogleCalendarState>({
@@ -131,7 +141,7 @@ export function useGoogleCalendar(): GoogleCalendarState & {
         `timeMax=${endOfDay.toISOString()}&` +
         `singleEvents=true&` +
         `orderBy=startTime&` +
-        `maxResults=20`,
+        `maxResults=100`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -436,5 +446,98 @@ export function useGoogleCalendar(): GoogleCalendarState & {
     }
   }, [accessToken, fetchEvents])
 
-  return { ...state, signIn, signOut, refresh, addEvent, addBatchEvents, toggleEventComplete, accessToken }
+  // Delete event from Google Calendar
+  const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
+    if (!accessToken) return false
+
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      )
+
+      if (response.status === 401) {
+        localStorage.removeItem('google_calendar_token')
+        setAccessToken(null)
+        setState(prev => ({ ...prev, isSignedIn: false }))
+        return false
+      }
+
+      if (!response.ok && response.status !== 204) return false
+
+      // Refresh events after deleting
+      await fetchEvents(accessToken)
+      return true
+    } catch (error) {
+      console.error('Failed to delete event:', error)
+      return false
+    }
+  }, [accessToken, fetchEvents])
+
+  // Update event in Google Calendar
+  const updateEvent = useCallback(async (eventId: string, data: UpdateEventData): Promise<boolean> => {
+    if (!accessToken) return false
+
+    try {
+      const event: any = {}
+
+      if (data.title !== undefined) {
+        event.summary = data.title
+      }
+
+      if (data.date !== undefined) {
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (data.isAllDay) {
+          event.start = { date: data.date }
+          const endDate = new Date(data.date)
+          endDate.setDate(endDate.getDate() + 1)
+          event.end = { date: endDate.toISOString().split('T')[0] }
+        } else if (data.startTime && data.endTime) {
+          event.start = {
+            dateTime: `${data.date}T${data.startTime}:00`,
+            timeZone
+          }
+          event.end = {
+            dateTime: `${data.date}T${data.endTime}:00`,
+            timeZone
+          }
+        }
+      }
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(event)
+        }
+      )
+
+      if (response.status === 401) {
+        localStorage.removeItem('google_calendar_token')
+        setAccessToken(null)
+        setState(prev => ({ ...prev, isSignedIn: false }))
+        return false
+      }
+
+      if (!response.ok) return false
+
+      // Refresh events after updating
+      await fetchEvents(accessToken)
+      return true
+    } catch (error) {
+      console.error('Failed to update event:', error)
+      return false
+    }
+  }, [accessToken, fetchEvents])
+
+  return { ...state, signIn, signOut, refresh, addEvent, addBatchEvents, toggleEventComplete, deleteEvent, updateEvent, accessToken }
 }

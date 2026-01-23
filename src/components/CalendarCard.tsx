@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useGoogleCalendar, type CalendarEvent, type NewEventData } from '../hooks/useGoogleCalendar'
-import { format, isToday, isTomorrow, differenceInMinutes } from 'date-fns'
+import { useGoogleCalendar, type CalendarEvent, type NewEventData, type UpdateEventData } from '../hooks/useGoogleCalendar'
+import { format, isToday, differenceInMinutes, addDays, subDays, isSameDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -9,12 +9,6 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 function formatEventTime(event: CalendarEvent): string {
   if (event.isAllDay) return '종일'
   return format(event.start, 'HH:mm')
-}
-
-function formatEventDate(date: Date): string {
-  if (isToday(date)) return '오늘'
-  if (isTomorrow(date)) return '내일'
-  return format(date, 'M/d (EEE)', { locale: ko })
 }
 
 function getTimeUntilEvent(event: CalendarEvent): string | null {
@@ -29,20 +23,29 @@ function getTimeUntilEvent(event: CalendarEvent): string | null {
 
 function EventItem({
   event,
-  onToggleComplete
+  onToggleComplete,
+  onEdit,
+  onDelete,
+  isSelectedToday
 }: {
   event: CalendarEvent
   onToggleComplete: (eventId: string, title: string) => void
+  onEdit: (event: CalendarEvent) => void
+  onDelete: (eventId: string) => void
+  isSelectedToday: boolean
 }) {
-  const timeUntil = getTimeUntilEvent(event)
+  const [showMenu, setShowMenu] = useState(false)
+  const timeUntil = isSelectedToday ? getTimeUntilEvent(event) : null
   const isUpcoming = timeUntil !== null
   const isCompleted = event.title.startsWith('✅ ')
   const displayTitle = isCompleted ? event.title.replace('✅ ', '') : event.title
 
   return (
-    <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all ${
-      isCompleted ? 'opacity-50' : isUpcoming ? 'bg-blue-500/10' : 'hover:bg-gray-700/50'
-    }`}>
+    <div
+      className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all relative group overflow-hidden ${
+        isCompleted ? 'opacity-50' : isUpcoming ? 'bg-blue-500/10' : 'hover:bg-gray-700/50'
+      }`}
+    >
       <button
         onClick={() => onToggleComplete(event.id, event.title)}
         className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
@@ -75,6 +78,55 @@ function EventItem({
           {timeUntil}
         </span>
       )}
+
+      {/* Menu button */}
+      <div className="relative">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-600 text-gray-400 hover:text-white transition-opacity"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="12" cy="19" r="2" />
+          </svg>
+        </button>
+
+        {showMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowMenu(false)}
+            />
+            <div className="absolute right-0 top-full mt-1 bg-gray-700 rounded-lg shadow-lg z-20 py-1 min-w-[100px]">
+              <button
+                onClick={() => {
+                  onEdit(event)
+                  setShowMenu(false)
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                수정
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(event.id)
+                  setShowMenu(false)
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-600 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                삭제
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -91,18 +143,18 @@ function QuickAddInput({ onAdd }: { onAdd: (title: string) => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex gap-2 w-full">
       <input
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="빠른 일정 추가..."
-        className="flex-1 min-w-0 px-3 py-2.5 sm:py-2 rounded-lg bg-gray-700 text-white placeholder-gray-500 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+        className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 sm:py-2 rounded-lg bg-gray-700 text-white placeholder-gray-500 text-sm outline-none focus:ring-1 focus:ring-blue-500"
       />
       <button
         type="submit"
         disabled={!title.trim()}
-        className="px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg bg-blue-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 flex-shrink-0"
+        className="px-2 sm:px-4 py-2.5 sm:py-2 rounded-lg bg-blue-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 flex-shrink-0"
       >
         추가
       </button>
@@ -219,29 +271,169 @@ function AddEventModal({
   )
 }
 
-function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
-  const groups = new Map<string, CalendarEvent[]>()
-  events.forEach(event => {
-    const dateKey = format(event.start, 'yyyy-MM-dd')
-    const existing = groups.get(dateKey) || []
-    groups.set(dateKey, [...existing, event])
-  })
-  return groups
+function EditEventModal({
+  event,
+  onClose,
+  onUpdate,
+  onDelete
+}: {
+  event: CalendarEvent | null
+  onClose: () => void
+  onUpdate: (eventId: string, data: UpdateEventData) => Promise<boolean>
+  onDelete: (eventId: string) => Promise<boolean>
+}) {
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState('')
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('10:00')
+  const [isAllDay, setIsAllDay] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (event) {
+      const displayTitle = event.title.startsWith('✅ ')
+        ? event.title.replace('✅ ', '')
+        : event.title
+      setTitle(displayTitle)
+      setDate(format(event.start, 'yyyy-MM-dd'))
+      setIsAllDay(event.isAllDay)
+      if (!event.isAllDay) {
+        setStartTime(format(event.start, 'HH:mm'))
+        setEndTime(format(event.end, 'HH:mm'))
+      }
+    }
+  }, [event])
+
+  if (!event) return null
+
+  const handleUpdate = async () => {
+    setIsSubmitting(true)
+    const success = await onUpdate(event.id, {
+      title: title.trim(),
+      date,
+      startTime: isAllDay ? undefined : startTime,
+      endTime: isAllDay ? undefined : endTime,
+      isAllDay
+    })
+    setIsSubmitting(false)
+    if (success) onClose()
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('이 일정을 삭제하시겠습니까?')) return
+    setIsSubmitting(true)
+    const success = await onDelete(event.id)
+    setIsSubmitting(false)
+    if (success) onClose()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-gray-800 rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+        <h3 className="text-lg font-bold text-white mb-4">일정 수정</h3>
+
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="일정 제목"
+            className="w-full px-4 py-3 rounded-xl bg-gray-700 text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+            autoFocus
+          />
+
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isAllDay}
+              onChange={(e) => setIsAllDay(e.target.checked)}
+              className="w-5 h-5 rounded accent-blue-500"
+            />
+            <span className="text-gray-300">종일</span>
+          </label>
+
+          {!isAllDay && (
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="px-4 py-3 rounded-xl bg-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="px-4 py-3 rounded-xl bg-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={handleDelete}
+            disabled={isSubmitting}
+            className="py-3 px-4 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 disabled:opacity-50"
+          >
+            삭제
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl bg-gray-700 text-gray-300 font-medium hover:bg-gray-600"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleUpdate}
+            disabled={!title.trim() || isSubmitting}
+            className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
+          >
+            {isSubmitting ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function CalendarCard() {
-  const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent, toggleEventComplete } = useGoogleCalendar()
+  const { events, isLoading, error, isSignedIn, signIn, signOut, refresh, addEvent, toggleEventComplete, deleteEvent, updateEvent } = useGoogleCalendar()
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   const handleQuickAdd = async (title: string) => {
-    const today = format(new Date(), 'yyyy-MM-dd')
-    await addEvent({ title, date: today, isAllDay: true })
+    const dateStr = format(selectedDate, 'yyyy-MM-dd')
+    await addEvent({ title, date: dateStr, isAllDay: true })
+  }
+
+  const goToPrevDay = () => setSelectedDate(prev => subDays(prev, 1))
+  const goToNextDay = () => setSelectedDate(prev => addDays(prev, 1))
+  const goToToday = () => setSelectedDate(new Date())
+
+  // Filter events for selected date
+  const selectedDateEvents = events.filter(e => isSameDay(e.start, selectedDate))
+
+  // Format selected date for display
+  const formatSelectedDate = () => {
+    return format(selectedDate, 'M월 d일 (EEE)', { locale: ko })
   }
 
   // Not configured
   if (!GOOGLE_CLIENT_ID) {
     return (
-      <div className="bg-gray-800 rounded-2xl p-4 shadow-lg">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <h2 className="text-lg font-bold mb-3 text-white flex items-center gap-2">
           📅 캘린더
         </h2>
@@ -253,7 +445,7 @@ export function CalendarCard() {
   // Loading
   if (isLoading) {
     return (
-      <div className="bg-gray-800 rounded-2xl p-4 shadow-lg">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <h2 className="text-lg font-bold mb-3 text-white flex items-center gap-2">
           📅 캘린더
         </h2>
@@ -265,7 +457,7 @@ export function CalendarCard() {
   // Error
   if (error) {
     return (
-      <div className="bg-gray-800 rounded-2xl p-4 shadow-lg">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <h2 className="text-lg font-bold mb-3 text-white flex items-center gap-2">
           📅 캘린더
         </h2>
@@ -282,7 +474,7 @@ export function CalendarCard() {
   // Not signed in
   if (!isSignedIn) {
     return (
-      <div className="bg-gray-800 rounded-2xl p-4 shadow-lg">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <h2 className="text-lg font-bold mb-3 text-white flex items-center gap-2">
           📅 캘린더
         </h2>
@@ -305,12 +497,9 @@ export function CalendarCard() {
   }
 
   // Signed in
-  const groupedEvents = groupEventsByDate(events)
-  const todayEvents = events.filter(e => isToday(e.start))
-
   return (
     <>
-      <div className="bg-gray-800 rounded-2xl p-4 shadow-lg">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <Link
@@ -319,11 +508,6 @@ export function CalendarCard() {
           >
             <span>📅</span>
             <span className="hidden sm:inline">캘린더</span>
-            {todayEvents.length > 0 && (
-              <span className="text-xs sm:text-sm font-normal text-blue-400">
-                오늘 {todayEvents.length}개
-              </span>
-            )}
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -359,33 +543,62 @@ export function CalendarCard() {
           </div>
         </div>
 
+        {/* Date Navigation */}
+        <div className="flex items-center justify-between mb-3 bg-gray-700/50 rounded-xl p-2 gap-1">
+          <button
+            onClick={goToPrevDay}
+            className="p-1.5 rounded-lg hover:bg-gray-600 text-gray-400 hover:text-white flex-shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={goToToday}
+            className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors min-w-0 truncate ${
+              isToday(selectedDate)
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+            }`}
+          >
+            {formatSelectedDate()}
+            {selectedDateEvents.length > 0 && (
+              <span className="ml-1 sm:ml-1.5 text-xs opacity-80">
+                ({selectedDateEvents.length})
+              </span>
+            )}
+          </button>
+          <button
+            onClick={goToNextDay}
+            className="p-1.5 rounded-lg hover:bg-gray-600 text-gray-400 hover:text-white flex-shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
         {/* Quick Add */}
         <div className="mb-4">
           <QuickAddInput onAdd={handleQuickAdd} />
         </div>
 
-        {/* Events */}
-        {events.length === 0 ? (
+        {/* Events for selected date */}
+        {selectedDateEvents.length === 0 ? (
           <div className="text-center py-6 text-gray-500">
-            <p>이번 주 일정이 없습니다</p>
+            <p>{formatSelectedDate()} 일정이 없습니다</p>
           </div>
         ) : (
-          <div className="space-y-4 max-h-64 overflow-y-auto">
-            {Array.from(groupedEvents.entries()).map(([dateKey, dayEvents]) => (
-              <div key={dateKey}>
-                <div className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">
-                  {formatEventDate(dayEvents[0].start)}
-                </div>
-                <div className="space-y-1">
-                  {dayEvents.map(event => (
-                    <EventItem
-                      key={event.id}
-                      event={event}
-                      onToggleComplete={toggleEventComplete}
-                    />
-                  ))}
-                </div>
-              </div>
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {selectedDateEvents.map(event => (
+              <EventItem
+                key={event.id}
+                event={event}
+                onToggleComplete={toggleEventComplete}
+                onEdit={setEditingEvent}
+                onDelete={deleteEvent}
+                isSelectedToday={isToday(selectedDate)}
+              />
             ))}
           </div>
         )}
@@ -395,6 +608,13 @@ export function CalendarCard() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={addEvent}
+      />
+
+      <EditEventModal
+        event={editingEvent}
+        onClose={() => setEditingEvent(null)}
+        onUpdate={updateEvent}
+        onDelete={deleteEvent}
       />
     </>
   )

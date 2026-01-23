@@ -38,7 +38,7 @@ export function Top3Card({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg card-hover">
+    <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg card-hover">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <span className="text-xl">🎯</span>

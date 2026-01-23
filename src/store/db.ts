@@ -100,3 +100,70 @@ export function createEmptyDayState(date: string): DayState {
     updatedAt: Date.now()
   }
 }
+
+// Export all data for backup
+export async function exportAllData(): Promise<string> {
+  const dayStates = await db.dayState.toArray()
+  const settings = await db.settings.toArray()
+  const habits = await db.habits.toArray()
+  const habitLogs = await db.habitLogs.toArray()
+
+  const exportData = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    data: {
+      dayStates,
+      settings,
+      habits,
+      habitLogs
+    }
+  }
+
+  return JSON.stringify(exportData, null, 2)
+}
+
+// Import data from backup
+export async function importData(jsonString: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const importData = JSON.parse(jsonString)
+
+    if (!importData.version || !importData.data) {
+      return { success: false, message: '잘못된 백업 파일 형식입니다' }
+    }
+
+    const { dayStates, settings, habits, habitLogs } = importData.data
+
+    await db.transaction('rw', [db.dayState, db.settings, db.habits, db.habitLogs], async () => {
+      if (dayStates?.length) {
+        await db.dayState.bulkPut(dayStates)
+      }
+      if (settings?.length) {
+        await db.settings.bulkPut(settings)
+      }
+      if (habits?.length) {
+        await db.habits.bulkPut(habits)
+      }
+      if (habitLogs?.length) {
+        await db.habitLogs.bulkPut(habitLogs)
+      }
+    })
+
+    return { success: true, message: '데이터를 성공적으로 복원했습니다' }
+  } catch (e) {
+    console.error('Import error:', e)
+    return { success: false, message: '데이터 복원에 실패했습니다' }
+  }
+}
+
+// Download backup file
+export function downloadBackup(data: string, filename: string): void {
+  const blob = new Blob([data], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}

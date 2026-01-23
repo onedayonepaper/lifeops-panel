@@ -36,7 +36,7 @@ export function OneActionCard({
   }
 
   return (
-    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-lg card-hover text-white">
+    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg card-hover text-white">
       <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
         <span className="text-xl">🚀</span>
         미래를 위한 1 Action
