@@ -271,10 +271,24 @@ export function useGoogleCalendar(): GoogleCalendarState & {
         } else if (hasLoggedInBefore) {
           // Only try silent refresh if user has logged in before
           console.log('[Calendar] Attempting silent token refresh...')
+
+          // Set a timeout - if silent refresh doesn't respond in 3 seconds, show login
+          const silentRefreshTimeout = setTimeout(() => {
+            console.log('[Calendar] Silent refresh timeout, showing login button')
+            setState(prev => {
+              // Only update if still loading (callback hasn't fired yet)
+              if (prev.isLoading) {
+                return { ...prev, isLoading: false }
+              }
+              return prev
+            })
+          }, 3000)
+
           try {
             client.requestAccessToken({ prompt: '' })
           } catch (e) {
             console.log('[Calendar] Silent refresh not available')
+            clearTimeout(silentRefreshTimeout)
             setState(prev => ({ ...prev, isLoading: false }))
           }
         } else {
