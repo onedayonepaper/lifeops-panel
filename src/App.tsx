@@ -40,6 +40,7 @@ function App() {
       <TopBar
         dayState={dayState}
         isNightMode={isNight}
+        onRefreshClick={() => window.location.reload()}
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
