@@ -43,7 +43,7 @@ function App() {
       />
 
       {/* Main Content */}
-      <main className="p-4 pb-8 max-w-2xl mx-auto">
+      <main className="p-4 pb-8">
         <div className="grid gap-4">
           {/* Calendar */}
           <CalendarCard />
