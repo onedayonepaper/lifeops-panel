@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useGoogleCalendar, type CalendarEvent, type NewEventData } from '../hooks/useGoogleCalendar'
 import { DAILY_ROUTINE } from '../data/dailyRoutine'
@@ -313,6 +313,15 @@ export function CalendarPage() {
   const [importDate, setImportDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null)
+  const [, setTick] = useState(0)
+
+  // Re-render every minute to update in-progress event sorting
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1)
+    }, 60000) // every minute
+    return () => clearInterval(interval)
+  }, [])
 
   const handleImportRoutine = async () => {
     setIsImporting(true)
@@ -321,6 +330,30 @@ export function CalendarPage() {
     setImportResult(result)
     setIsImporting(false)
   }
+
+  // Fetch events for the visible date range when view changes
+  useEffect(() => {
+    if (!isSignedIn) return
+
+    let startDate: Date
+    let endDate: Date
+
+    if (viewMode === 'day') {
+      startDate = currentDate
+      endDate = currentDate
+    } else if (viewMode === 'week') {
+      startDate = startOfWeek(currentDate, { weekStartsOn: 1 })
+      endDate = endOfWeek(currentDate, { weekStartsOn: 1 })
+    } else {
+      // month view - include days from adjacent months shown in calendar
+      const monthStart = startOfMonth(currentDate)
+      const monthEnd = endOfMonth(currentDate)
+      startDate = startOfWeek(monthStart, { weekStartsOn: 1 })
+      endDate = endOfWeek(monthEnd, { weekStartsOn: 1 })
+    }
+
+    refresh(startDate, endDate)
+  }, [currentDate, viewMode, isSignedIn])
 
   // Week view days
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
@@ -359,7 +392,33 @@ export function CalendarPage() {
   const goToToday = () => setCurrentDate(new Date())
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => isSameDay(event.start, day))
+    const now = new Date()
+    return events
+      .filter(event => isSameDay(event.start, day))
+      .sort((a, b) => {
+        // Check if event is past (already ended)
+        const aIsPast = !a.isAllDay && a.end < now
+        const bIsPast = !b.isAllDay && b.end < now
+
+        // Check if event is in progress (started but not ended)
+        const aInProgress = !a.isAllDay && a.start <= now && a.end >= now
+        const bInProgress = !b.isAllDay && b.start <= now && b.end >= now
+
+        // In-progress events at the very top
+        if (aInProgress && !bInProgress) return -1
+        if (!aInProgress && bInProgress) return 1
+
+        // All-day events come next
+        if (a.isAllDay && !b.isAllDay) return -1
+        if (!a.isAllDay && b.isAllDay) return 1
+
+        // Past (ended) events go to bottom
+        if (!aIsPast && bIsPast) return -1
+        if (aIsPast && !bIsPast) return 1
+
+        // Within same category, sort by start time
+        return a.start.getTime() - b.start.getTime()
+      })
   }
 
   const handleAddEvent = (date: Date) => {
@@ -398,7 +457,7 @@ export function CalendarPage() {
         <Header />
         <div className="max-w-4xl mx-auto mt-8 text-center">
           <p className="text-red-400 mb-4">{error}</p>
-          <button onClick={refresh} className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600">
+          <button onClick={() => refresh()} className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600">
             다시 시도
           </button>
         </div>
@@ -547,7 +606,6 @@ export function CalendarPage() {
             {/* Timeline */}
             {(() => {
               const dayEvents = getEventsForDay(currentDate)
-                .sort((a, b) => a.start.getTime() - b.start.getTime())
 
               if (dayEvents.length === 0) {
                 return (

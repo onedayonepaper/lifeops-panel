@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Settings } from '../store/db'
 import { exportAllData, importData, downloadBackup } from '../store/db'
-import { KEYBOARD_SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 import { updateSettings } from '../store/settings'
 import { useToast } from './Toast'
 
@@ -181,23 +180,6 @@ export function SettingsModal({ isOpen, onClose, settings }: SettingsModalProps)
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               모든 데이터를 JSON 파일로 내보내거나 가져올 수 있습니다
             </p>
-          </div>
-
-          {/* Keyboard Shortcuts */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              키보드 단축키
-            </h3>
-            <div className="space-y-1.5 text-xs">
-              {KEYBOARD_SHORTCUTS.map(({ key, description }) => (
-                <div key={key} className="flex items-center gap-2">
-                  <kbd className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 font-mono text-xs min-w-[40px] text-center">
-                    {key}
-                  </kbd>
-                  <span className="text-gray-600 dark:text-gray-400">{description}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* App Info */}

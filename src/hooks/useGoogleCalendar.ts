@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-const SCOPES = 'https://www.googleapis.com/auth/calendar.events'
+import { useGoogleAuth } from '../contexts/GoogleAuthContext'
 
 export interface CalendarEvent {
   id: string
@@ -21,52 +19,18 @@ export interface NewEventData {
   isAllDay: boolean
 }
 
-interface GoogleCalendarState {
-  events: CalendarEvent[]
-  isLoading: boolean
-  error: string | null
-  isSignedIn: boolean
+export interface BatchEventData {
+  title: string
+  startTime: string // HH:mm
+  endTime: string   // HH:mm
 }
 
-// Load Google Identity Services script
-function loadGoogleScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById('google-identity-script')) {
-      // Script already exists, check if google object is available
-      if ((window as any).google?.accounts?.oauth2) {
-        resolve()
-      } else {
-        // Script exists but not loaded yet, wait for it
-        const checkGoogle = setInterval(() => {
-          if ((window as any).google?.accounts?.oauth2) {
-            clearInterval(checkGoogle)
-            resolve()
-          }
-        }, 100)
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          clearInterval(checkGoogle)
-          reject(new Error('Google script timeout'))
-        }, 5000)
-      }
-      return
-    }
-
-    const script = document.createElement('script')
-    script.id = 'google-identity-script'
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    script.onload = () => {
-      console.log('[Calendar] Google script loaded')
-      resolve()
-    }
-    script.onerror = (e) => {
-      console.error('[Calendar] Google script load error:', e)
-      reject(new Error('Google script load failed'))
-    }
-    document.head.appendChild(script)
-  })
+export interface UpdateEventData {
+  title?: string
+  date?: string
+  startTime?: string
+  endTime?: string
+  isAllDay?: boolean
 }
 
 // Parse Google Calendar event
@@ -89,51 +53,26 @@ function parseEvent(event: any): CalendarEvent {
   }
 }
 
-export interface BatchEventData {
-  title: string
-  startTime: string // HH:mm
-  endTime: string   // HH:mm
-}
+export function useGoogleCalendar() {
+  const { isSignedIn, isLoading: authLoading, accessToken, signIn, signOut } = useGoogleAuth()
 
-export interface UpdateEventData {
-  title?: string
-  date?: string
-  startTime?: string
-  endTime?: string
-  isAllDay?: boolean
-}
-
-export function useGoogleCalendar(): GoogleCalendarState & {
-  signIn: () => void
-  signOut: () => void
-  refresh: () => void
-  addEvent: (eventData: NewEventData) => Promise<boolean>
-  addBatchEvents: (date: string, events: BatchEventData[]) => Promise<{ success: number; failed: number }>
-  toggleEventComplete: (eventId: string, currentTitle: string) => Promise<boolean>
-  deleteEvent: (eventId: string) => Promise<boolean>
-  updateEvent: (eventId: string, data: UpdateEventData) => Promise<boolean>
-  accessToken: string | null
-} {
-  const [state, setState] = useState<GoogleCalendarState>({
-    events: [],
-    isLoading: true,
-    error: null,
-    isSignedIn: false
-  })
-  const [tokenClient, setTokenClient] = useState<any>(null)
-  const [accessToken, setAccessToken] = useState<string | null>(() =>
-    localStorage.getItem('google_calendar_token')
-  )
-
-  // Check if user has ever logged in before (for silent refresh)
-  const hasLoggedInBefore = localStorage.getItem('google_calendar_has_logged_in') === 'true'
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Fetch events from Google Calendar API
-  const fetchEvents = useCallback(async (token: string) => {
+  const fetchEvents = useCallback(async (token: string, startDate?: Date, endDate?: Date) => {
     try {
+      setIsLoading(true)
+      setError(null)
+
       const now = new Date()
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7)
+      const startOfDay = startDate
+        ? new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const endOfDay = endDate
+        ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() + 1)
+        : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7)
 
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
@@ -150,15 +89,7 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       )
 
       if (response.status === 401) {
-        localStorage.removeItem('google_calendar_token')
-        setAccessToken(null)
-        setState(prev => ({
-          ...prev,
-          isSignedIn: false,
-          isLoading: false,
-          error: null,
-          events: []
-        }))
+        signOut()
         return
       }
 
@@ -167,22 +98,22 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       }
 
       const data = await response.json()
-      const events = (data.items || []).map(parseEvent)
-
-      setState({
-        events,
-        isLoading: false,
-        error: null,
-        isSignedIn: true
-      })
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : '오류가 발생했습니다'
-      }))
+      setEvents((data.items || []).map(parseEvent))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '오류가 발생했습니다')
+    } finally {
+      setIsLoading(false)
     }
-  }, [])
+  }, [signOut])
+
+  // Fetch events when signed in
+  useEffect(() => {
+    if (isSignedIn && accessToken) {
+      fetchEvents(accessToken)
+    } else {
+      setEvents([])
+    }
+  }, [isSignedIn, accessToken, fetchEvents])
 
   // Add event to Google Calendar
   const addEvent = useCallback(async (eventData: NewEventData): Promise<boolean> => {
@@ -195,7 +126,6 @@ export function useGoogleCalendar(): GoogleCalendarState & {
 
       if (eventData.isAllDay) {
         event.start = { date: eventData.date }
-        // For all-day events, end date should be the next day
         const endDate = new Date(eventData.date)
         endDate.setDate(endDate.getDate() + 1)
         event.end = { date: endDate.toISOString().split('T')[0] }
@@ -224,9 +154,7 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       )
 
       if (response.status === 401) {
-        localStorage.removeItem('google_calendar_token')
-        setAccessToken(null)
-        setState(prev => ({ ...prev, isSignedIn: false }))
+        signOut()
         return false
       }
 
@@ -234,132 +162,24 @@ export function useGoogleCalendar(): GoogleCalendarState & {
         throw new Error('이벤트를 추가할 수 없습니다')
       }
 
-      // Refresh events after adding
       await fetchEvents(accessToken)
       return true
-    } catch (error) {
-      console.error('Failed to add event:', error)
+    } catch (err) {
+      console.error('Failed to add event:', err)
       return false
     }
-  }, [accessToken, fetchEvents])
+  }, [accessToken, fetchEvents, signOut])
 
-  // Initialize Google Identity Services
-  useEffect(() => {
-    console.log('[Calendar] Init - Client ID:', GOOGLE_CLIENT_ID ? 'SET' : 'MISSING')
-
-    if (!GOOGLE_CLIENT_ID) {
-      console.log('[Calendar] No client ID, skipping Google init')
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: null
-      }))
-      return
-    }
-
-    let client: any = null
-
-    loadGoogleScript()
-      .then(() => {
-        console.log('[Calendar] Script loaded, initializing client...')
-        client = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: SCOPES,
-          callback: (response: any) => {
-            console.log('[Calendar] OAuth callback:', response.error || 'success')
-            if (response.access_token) {
-              localStorage.setItem('google_calendar_token', response.access_token)
-              localStorage.setItem('google_calendar_has_logged_in', 'true')
-              setAccessToken(response.access_token)
-              fetchEvents(response.access_token)
-            } else if (response.error) {
-              // Silent refresh failed, user needs to click login
-              console.log('[Calendar] Silent refresh failed:', response.error)
-              setState(prev => ({ ...prev, isLoading: false }))
-            }
-          }
-        })
-        setTokenClient(client)
-        console.log('[Calendar] Token client initialized')
-
-        if (accessToken) {
-          console.log('[Calendar] Existing token found, fetching events...')
-          fetchEvents(accessToken)
-        } else if (hasLoggedInBefore) {
-          // Only try silent refresh if user has logged in before
-          console.log('[Calendar] Attempting silent token refresh...')
-
-          // Set a timeout - if silent refresh doesn't respond in 3 seconds, show login
-          const silentRefreshTimeout = setTimeout(() => {
-            console.log('[Calendar] Silent refresh timeout, showing login button')
-            setState(prev => {
-              // Only update if still loading (callback hasn't fired yet)
-              if (prev.isLoading) {
-                return { ...prev, isLoading: false }
-              }
-              return prev
-            })
-          }, 3000)
-
-          try {
-            client.requestAccessToken({ prompt: '' })
-          } catch (e) {
-            console.log('[Calendar] Silent refresh not available')
-            clearTimeout(silentRefreshTimeout)
-            setState(prev => ({ ...prev, isLoading: false }))
-          }
-        } else {
-          // First time user - show login button immediately
-          console.log('[Calendar] First time user, showing login button')
-          setState(prev => ({ ...prev, isLoading: false }))
-        }
-      })
-      .catch((err) => {
-        console.error('[Calendar] Init error:', err)
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: 'Google 스크립트를 불러올 수 없습니다'
-        }))
-      })
-  }, [accessToken, fetchEvents])
-
-  const signIn = useCallback(() => {
-    if (tokenClient) {
-      tokenClient.requestAccessToken()
-    }
-  }, [tokenClient])
-
-  const signOut = useCallback(() => {
-    localStorage.removeItem('google_calendar_token')
-    localStorage.removeItem('google_calendar_has_logged_in')
-    setAccessToken(null)
-    setState({
-      events: [],
-      isLoading: false,
-      error: null,
-      isSignedIn: false
-    })
-  }, [])
-
-  const refresh = useCallback(() => {
-    if (accessToken) {
-      setState(prev => ({ ...prev, isLoading: true }))
-      fetchEvents(accessToken)
-    }
-  }, [accessToken, fetchEvents])
-
-  // Batch add events to Google Calendar
-  const addBatchEvents = useCallback(async (date: string, events: BatchEventData[]): Promise<{ success: number; failed: number }> => {
-    if (!accessToken) return { success: 0, failed: events.length }
+  // Batch add events
+  const addBatchEvents = useCallback(async (date: string, batchEvents: BatchEventData[]): Promise<{ success: number; failed: number }> => {
+    if (!accessToken) return { success: 0, failed: batchEvents.length }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     let success = 0
     let failed = 0
 
-    for (const eventData of events) {
+    for (const eventData of batchEvents) {
       try {
-        // Handle midnight crossing (e.g., 23:30-00:00)
         let endDate = date
         if (eventData.endTime === '00:00' || eventData.endTime < eventData.startTime) {
           const nextDay = new Date(date)
@@ -401,12 +221,11 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       }
     }
 
-    // Refresh events after batch add
     await fetchEvents(accessToken)
     return { success, failed }
   }, [accessToken, fetchEvents])
 
-  // Toggle event complete status (add/remove ✅ from title)
+  // Toggle event complete status
   const toggleEventComplete = useCallback(async (eventId: string, currentTitle: string): Promise<boolean> => {
     if (!accessToken) return false
 
@@ -429,24 +248,21 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       )
 
       if (response.status === 401) {
-        localStorage.removeItem('google_calendar_token')
-        setAccessToken(null)
-        setState(prev => ({ ...prev, isSignedIn: false }))
+        signOut()
         return false
       }
 
       if (!response.ok) return false
 
-      // Refresh events after toggling
       await fetchEvents(accessToken)
       return true
-    } catch (error) {
-      console.error('Failed to toggle event:', error)
+    } catch (err) {
+      console.error('Failed to toggle event:', err)
       return false
     }
-  }, [accessToken, fetchEvents])
+  }, [accessToken, fetchEvents, signOut])
 
-  // Delete event from Google Calendar
+  // Delete event
   const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
     if (!accessToken) return false
 
@@ -462,24 +278,21 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       )
 
       if (response.status === 401) {
-        localStorage.removeItem('google_calendar_token')
-        setAccessToken(null)
-        setState(prev => ({ ...prev, isSignedIn: false }))
+        signOut()
         return false
       }
 
       if (!response.ok && response.status !== 204) return false
 
-      // Refresh events after deleting
       await fetchEvents(accessToken)
       return true
-    } catch (error) {
-      console.error('Failed to delete event:', error)
+    } catch (err) {
+      console.error('Failed to delete event:', err)
       return false
     }
-  }, [accessToken, fetchEvents])
+  }, [accessToken, fetchEvents, signOut])
 
-  // Update event in Google Calendar
+  // Update event
   const updateEvent = useCallback(async (eventId: string, data: UpdateEventData): Promise<boolean> => {
     if (!accessToken) return false
 
@@ -522,22 +335,39 @@ export function useGoogleCalendar(): GoogleCalendarState & {
       )
 
       if (response.status === 401) {
-        localStorage.removeItem('google_calendar_token')
-        setAccessToken(null)
-        setState(prev => ({ ...prev, isSignedIn: false }))
+        signOut()
         return false
       }
 
       if (!response.ok) return false
 
-      // Refresh events after updating
       await fetchEvents(accessToken)
       return true
-    } catch (error) {
-      console.error('Failed to update event:', error)
+    } catch (err) {
+      console.error('Failed to update event:', err)
       return false
+    }
+  }, [accessToken, fetchEvents, signOut])
+
+  const refresh = useCallback((startDate?: Date, endDate?: Date) => {
+    if (accessToken) {
+      fetchEvents(accessToken, startDate, endDate)
     }
   }, [accessToken, fetchEvents])
 
-  return { ...state, signIn, signOut, refresh, addEvent, addBatchEvents, toggleEventComplete, deleteEvent, updateEvent, accessToken }
+  return {
+    events,
+    isLoading: authLoading || isLoading,
+    error,
+    isSignedIn,
+    signIn,
+    signOut,
+    refresh,
+    addEvent,
+    addBatchEvents,
+    toggleEventComplete,
+    deleteEvent,
+    updateEvent,
+    accessToken
+  }
 }

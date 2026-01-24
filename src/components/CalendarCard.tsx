@@ -412,6 +412,15 @@ export function CalendarCard() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [, setTick] = useState(0)
+
+  // Re-render every minute to update in-progress event sorting
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1)
+    }, 60000) // every minute
+    return () => clearInterval(interval)
+  }, [])
 
   const handleQuickAdd = async (title: string) => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -423,7 +432,7 @@ export function CalendarCard() {
   const goToToday = () => setSelectedDate(new Date())
 
   // Filter and sort events for selected date
-  // Sort: all-day → in-progress → upcoming → past (ended)
+  // Sort: in-progress → all-day → upcoming → past (ended)
   const selectedDateEvents = events
     .filter(e => isSameDay(e.start, selectedDate))
     .sort((a, b) => {
@@ -437,13 +446,13 @@ export function CalendarCard() {
       const aInProgress = !a.isAllDay && a.start <= now && a.end >= now
       const bInProgress = !b.isAllDay && b.start <= now && b.end >= now
 
-      // All-day events stay at top
-      if (a.isAllDay && !b.isAllDay) return -1
-      if (!a.isAllDay && b.isAllDay) return 1
-
-      // In-progress events come next
+      // In-progress events at the very top
       if (aInProgress && !bInProgress) return -1
       if (!aInProgress && bInProgress) return 1
+
+      // All-day events come next
+      if (a.isAllDay && !b.isAllDay) return -1
+      if (!a.isAllDay && b.isAllDay) return 1
 
       // Past (ended) events go to bottom
       if (!aIsPast && bIsPast) return -1
@@ -491,7 +500,7 @@ export function CalendarCard() {
         </h2>
         <div className="text-center py-4">
           <p className="text-red-400 text-sm mb-3">{error}</p>
-          <button onClick={refresh} className="px-4 py-2 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-600">
+          <button onClick={() => refresh()} className="px-4 py-2 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-600">
             다시 시도
           </button>
         </div>
@@ -551,7 +560,7 @@ export function CalendarCard() {
               </svg>
             </button>
             <button
-              onClick={refresh}
+              onClick={() => refresh()}
               className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
               title="새로고침"
             >

@@ -1,17 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie'
 
 // Types
-export type RunPlan = 'REST' | 'EASY' | 'LSD' | 'INTERVAL'
-
 export interface DayState {
   date: string // YYYY-MM-DD (Primary Key)
-  top3: [string, string, string]
-  top3Done: [boolean, boolean, boolean]
-  oneAction: string
-  oneActionDone: boolean
-  studyMinutesDone: number
-  runPlan: RunPlan
-  runDone: boolean
   notes: string[]
   createdAt: number
   updatedAt: number
@@ -26,26 +17,10 @@ export interface Settings {
   kioskMode: boolean
 }
 
-export interface Habit {
-  id?: number
-  name: string
-  emoji: string
-  createdAt: number
-}
-
-export interface HabitLog {
-  id?: number
-  habitId: number
-  date: string // YYYY-MM-DD
-  completed: boolean
-}
-
 // Database class
 class LifeOpsDB extends Dexie {
   dayState!: EntityTable<DayState, 'date'>
   settings!: EntityTable<Settings, 'id'>
-  habits!: EntityTable<Habit, 'id'>
-  habitLogs!: EntityTable<HabitLog, 'id'>
 
   constructor() {
     super('LifeOpsDB')
@@ -60,6 +35,14 @@ class LifeOpsDB extends Dexie {
       settings: 'id',
       habits: '++id, createdAt',
       habitLogs: '++id, habitId, date, [habitId+date]'
+    })
+
+    // Version 3: Remove habits, habitLogs tables and simplify DayState
+    this.version(3).stores({
+      dayState: 'date, createdAt, updatedAt',
+      settings: 'id',
+      habits: null,
+      habitLogs: null
     })
   }
 }
@@ -88,13 +71,6 @@ export async function initializeSettings(): Promise<Settings> {
 export function createEmptyDayState(date: string): DayState {
   return {
     date,
-    top3: ['', '', ''],
-    top3Done: [false, false, false],
-    oneAction: '',
-    oneActionDone: false,
-    studyMinutesDone: 0,
-    runPlan: 'REST',
-    runDone: false,
     notes: [],
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -105,17 +81,13 @@ export function createEmptyDayState(date: string): DayState {
 export async function exportAllData(): Promise<string> {
   const dayStates = await db.dayState.toArray()
   const settings = await db.settings.toArray()
-  const habits = await db.habits.toArray()
-  const habitLogs = await db.habitLogs.toArray()
 
   const exportData = {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     data: {
       dayStates,
-      settings,
-      habits,
-      habitLogs
+      settings
     }
   }
 
@@ -131,20 +103,14 @@ export async function importData(jsonString: string): Promise<{ success: boolean
       return { success: false, message: '잘못된 백업 파일 형식입니다' }
     }
 
-    const { dayStates, settings, habits, habitLogs } = importData.data
+    const { dayStates, settings } = importData.data
 
-    await db.transaction('rw', [db.dayState, db.settings, db.habits, db.habitLogs], async () => {
+    await db.transaction('rw', [db.dayState, db.settings], async () => {
       if (dayStates?.length) {
         await db.dayState.bulkPut(dayStates)
       }
       if (settings?.length) {
         await db.settings.bulkPut(settings)
-      }
-      if (habits?.length) {
-        await db.habits.bulkPut(habits)
-      }
-      if (habitLogs?.length) {
-        await db.habitLogs.bulkPut(habitLogs)
       }
     })
 

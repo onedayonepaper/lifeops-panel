@@ -22,18 +22,10 @@ export function TopBar({ dayState, isNightMode, onSettingsClick, onRefreshClick 
     return () => clearInterval(interval)
   }, [])
 
-  // Calculate today's status
+  // App status icon
   const getStatusIcon = () => {
     if (!dayState) return '💤'
-
-    const hasPlans = dayState.top3.some(t => t.trim() !== '') || dayState.oneAction.trim() !== ''
-    const allDone = dayState.top3Done.every((done, i) => !dayState.top3[i] || done) &&
-      (!dayState.oneAction || dayState.oneActionDone) &&
-      (dayState.runPlan === 'REST' || dayState.runDone)
-
-    if (allDone && hasPlans) return '✅'
-    if (hasPlans) return '🔥'
-    return '💤'
+    return '🚀'
   }
 
   return (

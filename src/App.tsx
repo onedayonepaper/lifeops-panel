@@ -1,30 +1,23 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { useDayState } from './hooks/useDayState'
 import { useNightMode } from './hooks/useNightMode'
+import { useGoogleAuth } from './contexts/GoogleAuthContext'
 import { useToast } from './components/Toast'
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { requestNotificationPermission } from './utils/notifications'
 import { TopBar } from './components/TopBar'
-import { StudyTimerCard } from './components/StudyTimerCard'
-import { RunCard } from './components/RunCard'
 import { SettingsModal } from './components/SettingsModal'
 import { CalendarCard } from './components/CalendarCard'
-import { WeeklyStreakCard } from './components/WeeklyStreakCard'
-import { HabitTrackerCard } from './components/HabitTrackerCard'
+import { TasksCard } from './components/TasksCard'
+import { BucketListCard } from './components/BucketListCard'
+import { StudyJournalCard } from './components/StudyJournalCard'
 import { CalendarPage } from './pages/CalendarPage'
 
-// Timer ref type for keyboard shortcuts
-export interface TimerRef {
-  toggle: () => void
-  reset: () => void
-}
-
 function HomePage() {
-  const { dayState, settings, weeklyStudyMinutes, isLoading, error, clearError, actions } = useDayState()
+  const { dayState, settings, isLoading, error, clearError } = useDayState()
+  const { accessToken, isSignedIn, signIn } = useGoogleAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const { showToast } = useToast()
-  const timerRef = useRef<TimerRef>(null)
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -38,13 +31,6 @@ function HomePage() {
   useEffect(() => {
     requestNotificationPermission()
   }, [])
-
-  // Keyboard shortcuts
-  useKeyboardShortcuts({
-    onToggleTimer: () => timerRef.current?.toggle(),
-    onResetTimer: () => timerRef.current?.reset(),
-    onRefresh: () => window.location.reload()
-  })
 
   const isNight = useNightMode(
     settings?.nightModeStart || '23:00',
@@ -77,30 +63,15 @@ function HomePage() {
 
       {/* Main Content */}
       <main className="p-2 sm:p-4 pb-8">
-        <div className="grid gap-2 sm:gap-4">
+        <div className="grid gap-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
           {/* Calendar */}
           <CalendarCard />
-
-          {/* Pomodoro Timer & Habits */}
-          <div className="grid md:grid-cols-2 gap-2 sm:gap-4">
-            <StudyTimerCard
-              ref={timerRef}
-              dayState={dayState}
-              weeklyStudyMinutes={weeklyStudyMinutes}
-              onAddStudyMinutes={actions.addStudyMinutes}
-            />
-            <HabitTrackerCard />
-          </div>
-
-          {/* Run & Weekly Streak */}
-          <div className="grid md:grid-cols-2 gap-2 sm:gap-4">
-            <RunCard
-              dayState={dayState}
-              onUpdateRunPlan={actions.updateRunPlan}
-              onToggleRunDone={actions.toggleRunDone}
-            />
-            <WeeklyStreakCard />
-          </div>
+          {/* Tasks */}
+          <TasksCard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
+          {/* Bucket List */}
+          <BucketListCard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
+          {/* Study Journal */}
+          <StudyJournalCard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
         </div>
       </main>
 
