@@ -42,7 +42,7 @@ function AddHabitModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="예: 물 8잔"
-              className="w-full px-4 py-3 rounded-xl bg-gray-700 text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-3 rounded-xl bg-gray-700 text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-teal-500"
               autoFocus
             />
           </div>
@@ -56,7 +56,7 @@ function AddHabitModal({
                   onClick={() => setEmoji(e)}
                   className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all ${
                     emoji === e
-                      ? 'bg-amber-500 scale-110'
+                      ? 'bg-teal-600 scale-110'
                       : 'bg-gray-700 hover:bg-gray-600'
                   }`}
                 >
@@ -77,7 +77,7 @@ function AddHabitModal({
           <button
             onClick={handleSubmit}
             disabled={!name.trim()}
-            className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 disabled:opacity-50"
           >
             추가
           </button>
@@ -97,7 +97,7 @@ export function HabitTrackerCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
+      <div className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
         <div className="animate-pulse h-24 bg-white/20 rounded-xl" />
       </div>
     )
@@ -105,7 +105,7 @@ export function HabitTrackerCard() {
 
   return (
     <>
-      <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-3 sm:p-4 shadow-lg text-white">
+      <div className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg text-white">
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2">
@@ -168,7 +168,7 @@ export function HabitTrackerCard() {
                       e.stopPropagation()
                       removeHabit(habit.id!)
                     }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 hover:bg-red-700 rounded-full text-white text-xs flex items-center justify-center"
                   >
                     ✕
                   </button>

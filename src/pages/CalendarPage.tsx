@@ -55,7 +55,7 @@ function EventItem({
         onClick={() => onToggleComplete(event.id, event.title)}
         className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
           isCompleted
-            ? 'bg-emerald-500 border-emerald-500 text-white'
+            ? 'bg-emerald-700 border-emerald-500 text-white'
             : 'border-gray-500 hover:border-blue-400'
         }`}
       >
@@ -188,7 +188,7 @@ function AddEventModal({
           <button
             onClick={handleSubmit}
             disabled={!title.trim() || isSubmitting}
-            className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
           >
             {isSubmitting ? '추가 중...' : '추가'}
           </button>
@@ -261,7 +261,7 @@ function ImportRoutineModal({
 
         {result && (
           <div className={`mb-5 p-3 rounded-xl ${
-            result.failed === 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+            result.failed === 0 ? 'bg-emerald-700/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
           }`}>
             {result.failed === 0
               ? `✅ ${result.success}개 일정이 추가되었습니다!`
@@ -282,7 +282,7 @@ function ImportRoutineModal({
             <button
               onClick={onImport}
               disabled={isImporting}
-              className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isImporting ? (
                 <>
@@ -443,7 +443,7 @@ export function CalendarPage() {
                 onClick={() => setViewMode('day')}
                 className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                   viewMode === 'day'
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-blue-700 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -453,7 +453,7 @@ export function CalendarPage() {
                 onClick={() => setViewMode('week')}
                 className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                   viewMode === 'week'
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-blue-700 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -463,7 +463,7 @@ export function CalendarPage() {
                 onClick={() => setViewMode('month')}
                 className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                   viewMode === 'month'
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-blue-700 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -597,7 +597,7 @@ export function CalendarPage() {
                           <div className="flex flex-col items-center">
                             <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                               isCompleted
-                                ? 'bg-emerald-500 border-emerald-500'
+                                ? 'bg-emerald-700 border-emerald-500'
                                 : 'border-blue-400 bg-gray-900'
                             }`}>
                               {isCompleted && (
@@ -648,7 +648,7 @@ export function CalendarPage() {
                   </div>
                   <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      className="h-full bg-emerald-700 rounded-full transition-all duration-500"
                       style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
                     />
                   </div>
@@ -737,7 +737,7 @@ export function CalendarPage() {
                             >
                               <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                                 isCompleted
-                                  ? 'bg-emerald-500 border-emerald-500'
+                                  ? 'bg-emerald-700 border-emerald-500'
                                   : 'border-gray-500'
                               }`}>
                                 {isCompleted && (

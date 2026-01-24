@@ -50,7 +50,7 @@ function EventItem({
         onClick={() => onToggleComplete(event.id, event.title)}
         className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
           isCompleted
-            ? 'bg-emerald-500 border-emerald-500 text-white'
+            ? 'bg-emerald-700 border-emerald-500 text-white'
             : 'border-gray-500 hover:border-blue-400'
         }`}
       >
@@ -154,7 +154,7 @@ function QuickAddInput({ onAdd }: { onAdd: (title: string) => void }) {
       <button
         type="submit"
         disabled={!title.trim()}
-        className="px-2 sm:px-4 py-2.5 sm:py-2 rounded-lg bg-blue-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 flex-shrink-0"
+        className="px-2 sm:px-4 py-2.5 sm:py-2 rounded-lg bg-blue-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 flex-shrink-0"
       >
         추가
       </button>
@@ -261,7 +261,7 @@ function AddEventModal({
           <button
             onClick={handleSubmit}
             disabled={!title.trim() || isSubmitting}
-            className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
           >
             {isSubmitting ? '추가 중...' : '추가'}
           </button>
@@ -384,7 +384,7 @@ function EditEventModal({
           <button
             onClick={handleDelete}
             disabled={isSubmitting}
-            className="py-3 px-4 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 disabled:opacity-50"
+            className="py-3 px-4 rounded-xl bg-gray-700 text-gray-300 font-medium hover:bg-red-900 hover:text-red-300 disabled:opacity-50"
           >
             삭제
           </button>
@@ -397,7 +397,7 @@ function EditEventModal({
           <button
             onClick={handleUpdate}
             disabled={!title.trim() || isSubmitting}
-            className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium hover:bg-blue-600 disabled:opacity-50"
           >
             {isSubmitting ? '저장 중...' : '저장'}
           </button>
@@ -557,7 +557,7 @@ export function CalendarCard() {
             onClick={goToToday}
             className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors min-w-0 truncate ${
               isToday(selectedDate)
-                ? 'bg-blue-500 text-white'
+                ? 'bg-blue-700 text-white'
                 : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
             }`}
           >

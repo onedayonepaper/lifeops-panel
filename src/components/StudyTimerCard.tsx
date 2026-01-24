@@ -135,22 +135,22 @@ export const StudyTimerCard = forwardRef<TimerRef, StudyTimerCardProps>(function
         return {
           emoji: isRunning ? '🔥' : '🍅',
           label: '집중',
-          gradient: 'from-red-500 to-orange-600',
-          buttonColor: 'bg-red-600 hover:bg-red-700'
+          gradient: 'from-rose-900 to-red-950',
+          buttonColor: 'bg-rose-800 hover:bg-rose-700'
         }
       case 'shortBreak':
         return {
           emoji: '☕',
           label: '짧은 휴식',
-          gradient: 'from-emerald-500 to-teal-600',
-          buttonColor: 'bg-emerald-600 hover:bg-emerald-700'
+          gradient: 'from-teal-800 to-teal-900',
+          buttonColor: 'bg-teal-700 hover:bg-teal-600'
         }
       case 'longBreak':
         return {
           emoji: '🌴',
           label: '긴 휴식',
-          gradient: 'from-blue-500 to-indigo-600',
-          buttonColor: 'bg-blue-600 hover:bg-blue-700'
+          gradient: 'from-indigo-800 to-indigo-900',
+          buttonColor: 'bg-indigo-700 hover:bg-indigo-600'
         }
     }
   }

@@ -13,21 +13,21 @@ function DayCell({ day }: { day: DayStreak }) {
       </span>
       <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-base sm:text-lg ${
         isComplete
-          ? 'bg-emerald-500 text-white'
+          ? 'bg-emerald-700 text-white'
           : hasActivity
-          ? 'bg-amber-500 text-white'
+          ? 'bg-slate-600 text-white'
           : day.isToday
-          ? 'bg-gray-600 text-gray-300 ring-2 ring-emerald-400'
+          ? 'bg-gray-600 text-gray-300 ring-2 ring-emerald-600'
           : 'bg-gray-700 text-gray-500'
       }`}>
         {isComplete ? '🔥' : hasActivity ? '⚡' : day.isToday ? '📍' : '·'}
       </div>
       <div className="flex gap-0.5">
         <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
-          day.hasStudy ? 'bg-blue-400' : 'bg-gray-600'
+          day.hasStudy ? 'bg-blue-600' : 'bg-gray-600'
         }`} title="공부" />
         <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
-          day.hasRun ? 'bg-green-400' : day.runPlan === 'REST' ? 'bg-gray-500' : 'bg-gray-600'
+          day.hasRun ? 'bg-green-600' : day.runPlan === 'REST' ? 'bg-gray-500' : 'bg-gray-600'
         }`} title="운동" />
       </div>
     </div>
@@ -90,11 +90,11 @@ export function WeeklyStreakCard() {
       <div className="flex items-center justify-between text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 pt-2 sm:pt-3 border-t border-gray-200 dark:border-gray-700">
         <div className="hidden sm:flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-blue-400" />
+            <span className="w-2 h-2 rounded-full bg-blue-600" />
             공부
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-400" />
+            <span className="w-2 h-2 rounded-full bg-green-600" />
             운동
           </span>
         </div>

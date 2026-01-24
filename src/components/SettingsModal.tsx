@@ -160,7 +160,7 @@ export function SettingsModal({ isOpen, onClose, settings }: SettingsModalProps)
               <button
                 onClick={handleBackup}
                 disabled={isBackingUp}
-                className="flex-1 py-2 px-3 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white text-sm font-medium"
+                className="flex-1 py-2 px-3 rounded-lg bg-blue-700 hover:bg-blue-600 disabled:bg-blue-800 text-white text-sm font-medium"
               >
                 {isBackingUp ? '백업 중...' : '📥 백업'}
               </button>
@@ -214,7 +214,7 @@ export function SettingsModal({ isOpen, onClose, settings }: SettingsModalProps)
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full mt-6 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-400 text-white font-semibold touch-target"
+          className="w-full mt-6 py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 disabled:bg-emerald-800 text-white font-semibold touch-target"
         >
           {isSaving ? '저장 중...' : '저장'}
         </button>

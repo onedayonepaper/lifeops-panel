@@ -51,9 +51,9 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   }, [onClose])
 
   const bgColor = {
-    success: 'bg-emerald-600',
-    error: 'bg-red-600',
-    info: 'bg-blue-600'
+    success: 'bg-emerald-800',
+    error: 'bg-rose-900',
+    info: 'bg-slate-700'
   }[toast.type]
 
   const icon = {
