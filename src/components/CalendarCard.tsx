@@ -42,7 +42,7 @@ function EventItem({
 
   return (
     <div
-      className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all relative group overflow-hidden ${
+      className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all relative group ${
         isCompleted ? 'opacity-50' : isUpcoming ? 'bg-blue-500/10' : 'hover:bg-gray-700/50'
       }`}
     >
@@ -80,10 +80,10 @@ function EventItem({
       )}
 
       {/* Menu button */}
-      <div className="relative">
+      <div className={`relative ${showMenu ? 'z-30' : ''}`}>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-600 text-gray-400 hover:text-white transition-opacity"
+          className="p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-600 text-gray-400 hover:text-white transition-opacity"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="5" r="2" />
@@ -95,10 +95,10 @@ function EventItem({
         {showMenu && (
           <>
             <div
-              className="fixed inset-0 z-10"
+              className="fixed inset-0 z-40"
               onClick={() => setShowMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-1 bg-gray-700 rounded-lg shadow-lg z-20 py-1 min-w-[100px]">
+            <div className="absolute right-0 top-full mt-1 bg-gray-700 rounded-lg shadow-lg z-50 py-1 min-w-[100px]">
               <button
                 onClick={() => {
                   onEdit(event)
