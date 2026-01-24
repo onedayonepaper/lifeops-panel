@@ -422,8 +422,26 @@ export function CalendarCard() {
   const goToNextDay = () => setSelectedDate(prev => addDays(prev, 1))
   const goToToday = () => setSelectedDate(new Date())
 
-  // Filter events for selected date
-  const selectedDateEvents = events.filter(e => isSameDay(e.start, selectedDate))
+  // Filter and sort events for selected date
+  // Sort: upcoming events first (sorted by time), then past events at the bottom
+  const selectedDateEvents = events
+    .filter(e => isSameDay(e.start, selectedDate))
+    .sort((a, b) => {
+      const now = new Date()
+      const aIsPast = !a.isAllDay && a.start < now
+      const bIsPast = !b.isAllDay && b.start < now
+
+      // All-day events stay at top
+      if (a.isAllDay && !b.isAllDay) return -1
+      if (!a.isAllDay && b.isAllDay) return 1
+
+      // Past events go to bottom
+      if (!aIsPast && bIsPast) return -1
+      if (aIsPast && !bIsPast) return 1
+
+      // Within same category, sort by start time
+      return a.start.getTime() - b.start.getTime()
+    })
 
   // Format selected date for display
   const formatSelectedDate = () => {
