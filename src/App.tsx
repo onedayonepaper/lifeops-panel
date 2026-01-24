@@ -12,8 +12,6 @@ import { SettingsModal } from './components/SettingsModal'
 import { CalendarCard } from './components/CalendarCard'
 import { WeeklyStreakCard } from './components/WeeklyStreakCard'
 import { HabitTrackerCard } from './components/HabitTrackerCard'
-import { Top3Card } from './components/Top3Card'
-import { OneActionCard } from './components/OneActionCard'
 import { CalendarPage } from './pages/CalendarPage'
 
 // Timer ref type for keyboard shortcuts
@@ -45,16 +43,6 @@ function HomePage() {
   useKeyboardShortcuts({
     onToggleTimer: () => timerRef.current?.toggle(),
     onResetTimer: () => timerRef.current?.reset(),
-    onToggleTop3: (index) => {
-      if (dayState?.top3[index]?.trim()) {
-        actions.toggleTop3Done(index)
-      }
-    },
-    onToggleOneAction: () => {
-      if (dayState?.oneAction?.trim()) {
-        actions.toggleOneActionDone()
-      }
-    },
     onRefresh: () => window.location.reload()
   })
 
@@ -112,21 +100,6 @@ function HomePage() {
               onToggleRunDone={actions.toggleRunDone}
             />
             <WeeklyStreakCard />
-          </div>
-
-          {/* Top3 & One Action */}
-          <div className="grid md:grid-cols-2 gap-2 sm:gap-4">
-            <Top3Card
-              dayState={dayState}
-              onUpdateTop3={actions.updateTop3}
-              onToggleTop3Done={actions.toggleTop3Done}
-              onCopyFromYesterday={actions.copyFromYesterday}
-            />
-            <OneActionCard
-              dayState={dayState}
-              onUpdateOneAction={actions.updateOneAction}
-              onToggleOneActionDone={actions.toggleOneActionDone}
-            />
           </div>
         </div>
       </main>

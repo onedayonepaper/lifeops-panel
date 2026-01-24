@@ -59,39 +59,6 @@ export async function updateDayState(date: string, updates: Partial<DayState>): 
   })
 }
 
-// Top3 operations
-export async function updateTop3(date: string, index: number, value: string): Promise<void> {
-  const state = await db.dayState.get(date)
-  if (!state) return
-
-  const newTop3 = [...state.top3] as [string, string, string]
-  newTop3[index] = value
-
-  await updateDayState(date, { top3: newTop3 })
-}
-
-export async function toggleTop3Done(date: string, index: number): Promise<void> {
-  const state = await db.dayState.get(date)
-  if (!state) return
-
-  const newTop3Done = [...state.top3Done] as [boolean, boolean, boolean]
-  newTop3Done[index] = !newTop3Done[index]
-
-  await updateDayState(date, { top3Done: newTop3Done })
-}
-
-// One Action operations
-export async function updateOneAction(date: string, value: string): Promise<void> {
-  await updateDayState(date, { oneAction: value })
-}
-
-export async function toggleOneActionDone(date: string): Promise<void> {
-  const state = await db.dayState.get(date)
-  if (!state) return
-
-  await updateDayState(date, { oneActionDone: !state.oneActionDone })
-}
-
 // Study operations
 export async function addStudyMinutes(date: string, minutes: number): Promise<void> {
   const state = await db.dayState.get(date)
@@ -117,19 +84,6 @@ export async function toggleRunDone(date: string): Promise<void> {
 // Notes operations
 export async function updateNotes(date: string, notes: string[]): Promise<void> {
   await updateDayState(date, { notes })
-}
-
-// Copy from yesterday
-export async function copyFromYesterday(date: string): Promise<void> {
-  const yesterdayKey = getYesterdayKey()
-  const yesterday = await db.dayState.get(yesterdayKey)
-
-  if (!yesterday) return
-
-  await updateDayState(date, {
-    top3: yesterday.top3,
-    oneAction: yesterday.oneAction
-  })
 }
 
 // Get weekly study stats

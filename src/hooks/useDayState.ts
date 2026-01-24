@@ -4,15 +4,10 @@ import { isAfter, format, subDays } from 'date-fns'
 import { db, type DayState, type Settings } from '../store/db'
 import {
   getOrCreateTodayState,
-  updateTop3,
-  toggleTop3Done,
-  updateOneAction,
-  toggleOneActionDone,
   addStudyMinutes,
   updateRunPlan,
   toggleRunDone,
   updateNotes,
-  copyFromYesterday,
   getWeeklyStudyMinutes
 } from '../store/dayState'
 import { getSettings } from '../store/settings'
@@ -39,15 +34,10 @@ interface UseDayStateReturn {
   error: string | null
   clearError: () => void
   actions: {
-    updateTop3: (index: number, value: string) => Promise<void>
-    toggleTop3Done: (index: number) => Promise<void>
-    updateOneAction: (value: string) => Promise<void>
-    toggleOneActionDone: () => Promise<void>
     addStudyMinutes: (minutes: number) => Promise<void>
     updateRunPlan: (plan: RunPlan) => Promise<void>
     toggleRunDone: () => Promise<void>
     updateNotes: (notes: string[]) => Promise<void>
-    copyFromYesterday: () => Promise<void>
     refreshWeeklyStats: () => Promise<void>
   }
 }
@@ -151,34 +141,6 @@ export function useDayState(): UseDayStateReturn {
   }, [])
 
   const actions = {
-    updateTop3: withErrorHandling(
-      async (index: number, value: string) => {
-        if (!effectiveDateKey) return
-        await updateTop3(effectiveDateKey, index, value)
-      },
-      '할 일 저장에 실패했습니다'
-    ),
-    toggleTop3Done: withErrorHandling(
-      async (index: number) => {
-        if (!effectiveDateKey) return
-        await toggleTop3Done(effectiveDateKey, index)
-      },
-      '완료 상태 변경에 실패했습니다'
-    ),
-    updateOneAction: withErrorHandling(
-      async (value: string) => {
-        if (!effectiveDateKey) return
-        await updateOneAction(effectiveDateKey, value)
-      },
-      '원 액션 저장에 실패했습니다'
-    ),
-    toggleOneActionDone: withErrorHandling(
-      async () => {
-        if (!effectiveDateKey) return
-        await toggleOneActionDone(effectiveDateKey)
-      },
-      '완료 상태 변경에 실패했습니다'
-    ),
     addStudyMinutes: withErrorHandling(
       async (minutes: number) => {
         if (!effectiveDateKey) return
@@ -207,13 +169,6 @@ export function useDayState(): UseDayStateReturn {
         await updateNotes(effectiveDateKey, notes)
       },
       '메모 저장에 실패했습니다'
-    ),
-    copyFromYesterday: withErrorHandling(
-      async () => {
-        if (!effectiveDateKey) return
-        await copyFromYesterday(effectiveDateKey)
-      },
-      '어제 데이터 복사에 실패했습니다'
     ),
     refreshWeeklyStats
   }
