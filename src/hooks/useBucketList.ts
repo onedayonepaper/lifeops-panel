@@ -62,6 +62,38 @@ export function useBucketList(accessToken: string | null) {
     }
   }, [])
 
+  // Find existing folder by name
+  const findFolderByName = useCallback(async (token: string): Promise<string | null> => {
+    try {
+      const query = `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!response.ok) return null
+      const data = await response.json()
+      return data.files?.[0]?.id || null
+    } catch {
+      return null
+    }
+  }, [])
+
+  // Find existing doc in folder by name
+  const findDocInFolder = useCallback(async (token: string, folderId: string): Promise<string | null> => {
+    try {
+      const query = `name='${DOC_NAME}' and '${folderId}' in parents and mimeType='application/vnd.google-apps.document' and trashed=false`
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!response.ok) return null
+      const data = await response.json()
+      return data.files?.[0]?.id || null
+    } catch {
+      return null
+    }
+  }, [])
+
   // Create folder in Drive
   const createFolder = useCallback(async (token: string): Promise<string | null> => {
     try {
@@ -355,30 +387,72 @@ export function useBucketList(accessToken: string | null) {
     }
 
     const init = async () => {
-      if (state.folderId && state.docId) {
+      setState(prev => ({ ...prev, isLoading: true }))
+
+      let folderId = state.folderId
+      let docId = state.docId
+
+      // If we have stored IDs, verify them
+      if (folderId && docId) {
         const [folderValid, docValid] = await Promise.all([
-          verifyFolder(accessToken, state.folderId),
-          verifyDoc(accessToken, state.docId)
+          verifyFolder(accessToken, folderId),
+          verifyDoc(accessToken, docId)
         ])
 
         if (folderValid && docValid) {
-          setState(prev => ({ ...prev, isInitialized: true }))
-          await fetchItems(accessToken, state.docId!)
-        } else {
-          if (!folderValid) {
-            localStorage.removeItem(FOLDER_ID_KEY)
-            setState(prev => ({ ...prev, folderId: null }))
-          }
-          if (!docValid) {
-            localStorage.removeItem(DOC_ID_KEY)
-            setState(prev => ({ ...prev, docId: null }))
-          }
+          setState(prev => ({ ...prev, isInitialized: true, isLoading: false }))
+          await fetchItems(accessToken, docId!)
+          return
         }
+
+        // Clear invalid IDs
+        if (!folderValid) {
+          localStorage.removeItem(FOLDER_ID_KEY)
+          folderId = null
+        }
+        if (!docValid) {
+          localStorage.removeItem(DOC_ID_KEY)
+          docId = null
+        }
+      }
+
+      // Try to find existing folder and doc in Drive
+      if (!folderId) {
+        folderId = await findFolderByName(accessToken)
+        if (folderId) {
+          localStorage.setItem(FOLDER_ID_KEY, folderId)
+        }
+      }
+
+      if (folderId && !docId) {
+        docId = await findDocInFolder(accessToken, folderId)
+        if (docId) {
+          localStorage.setItem(DOC_ID_KEY, docId)
+        }
+      }
+
+      // If both found, load data
+      if (folderId && docId) {
+        setState(prev => ({
+          ...prev,
+          folderId,
+          docId,
+          isInitialized: true,
+          isLoading: false
+        }))
+        await fetchItems(accessToken, docId)
+      } else {
+        setState(prev => ({
+          ...prev,
+          folderId,
+          docId,
+          isLoading: false
+        }))
       }
     }
 
     init()
-  }, [accessToken, state.folderId, state.docId, verifyFolder, verifyDoc, fetchItems])
+  }, [accessToken, state.folderId, state.docId, verifyFolder, verifyDoc, findFolderByName, findDocInFolder, fetchItems])
 
   // Refresh items
   const refresh = useCallback(() => {
