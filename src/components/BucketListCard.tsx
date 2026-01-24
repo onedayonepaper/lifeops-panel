@@ -32,7 +32,6 @@ export function BucketListCard({ accessToken, isSignedIn, onSignIn }: BucketList
     isLoading,
     error,
     isInitialized,
-    initializeSheet,
     addItem,
     updateStatus,
     deleteItem,
@@ -69,10 +68,6 @@ export function BucketListCard({ accessToken, isSignedIn, onSignIn }: BucketList
     setMenuOpen(null)
   }
 
-  const handleInitialize = async () => {
-    await initializeSheet()
-  }
-
   // Not signed in
   if (!isSignedIn) {
     return (
@@ -100,20 +95,7 @@ export function BucketListCard({ accessToken, isSignedIn, onSignIn }: BucketList
   }
 
   // Loading
-  if (isLoading && !isInitialized) {
-    return (
-      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
-        <h2 className="text-base sm:text-lg font-bold mb-3 text-white flex items-center gap-2">
-          <span>🎯</span>
-          <span>버킷리스트</span>
-        </h2>
-        <div className="animate-pulse text-gray-400 text-center py-4">로딩 중...</div>
-      </div>
-    )
-  }
-
-  // Not initialized - need to create spreadsheet
-  if (!isInitialized) {
+  if (isLoading || !isInitialized) {
     return (
       <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <h2 className="text-base sm:text-lg font-bold mb-3 text-white flex items-center gap-2">
@@ -124,41 +106,11 @@ export function BucketListCard({ accessToken, isSignedIn, onSignIn }: BucketList
           {error ? (
             <>
               <p className="text-red-400 text-sm mb-3">{error}</p>
-              <p className="text-gray-500 text-xs mb-3">권한 문제일 수 있습니다. 로그아웃 후 다시 로그인해주세요.</p>
+              <p className="text-gray-500 text-xs">권한 문제일 수 있습니다. 로그아웃 후 다시 로그인해주세요.</p>
             </>
           ) : (
-            <p className="text-gray-400 text-sm mb-3">
-              Google Drive에 버킷리스트 폴더와 문서를 생성합니다
-            </p>
+            <div className="animate-pulse text-gray-400">로딩 중...</div>
           )}
-          <button
-            onClick={handleInitialize}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50"
-          >
-            {isLoading ? '생성 중...' : error ? '다시 시도' : '시작하기'}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Error
-  if (error) {
-    return (
-      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
-        <h2 className="text-base sm:text-lg font-bold mb-3 text-white flex items-center gap-2">
-          <span>🎯</span>
-          <span>버킷리스트</span>
-        </h2>
-        <div className="text-center py-4">
-          <p className="text-red-400 text-sm mb-3">{error}</p>
-          <button
-            onClick={refresh}
-            className="px-4 py-2 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-600"
-          >
-            다시 시도
-          </button>
         </div>
       </div>
     )

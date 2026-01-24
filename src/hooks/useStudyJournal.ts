@@ -503,17 +503,42 @@ export function useStudyJournal(accessToken: string | null) {
         }))
         await fetchContent(accessToken, docId)
       } else {
-        setState(prev => ({
-          ...prev,
-          folderId,
-          docId,
-          isLoading: false
-        }))
+        // Auto-create folder and doc if not found
+        if (!folderId) {
+          folderId = await createFolder(accessToken)
+          if (folderId) {
+            localStorage.setItem(FOLDER_ID_KEY, folderId)
+          }
+        }
+
+        if (folderId && !docId) {
+          docId = await createDoc(accessToken, folderId)
+          if (docId) {
+            localStorage.setItem(DOC_ID_KEY, docId)
+          }
+        }
+
+        if (folderId && docId) {
+          setState(prev => ({
+            ...prev,
+            folderId,
+            docId,
+            isInitialized: true,
+            isLoading: false
+          }))
+          await fetchContent(accessToken, docId)
+        } else {
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: '폴더 또는 문서를 생성할 수 없습니다'
+          }))
+        }
       }
     }
 
     init()
-  }, [accessToken, state.folderId, state.docId, verifyFolder, verifyDoc, findFolderByName, findDocInFolder, fetchContent])
+  }, [accessToken, state.folderId, state.docId, verifyFolder, verifyDoc, findFolderByName, findDocInFolder, createFolder, createDoc, fetchContent])
 
   return {
     ...state,

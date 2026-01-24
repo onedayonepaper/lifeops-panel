@@ -15,7 +15,6 @@ export function StudyJournalCard({ accessToken, isSignedIn, onSignIn }: StudyJou
     error,
     isInitialized,
     entries,
-    initialize,
     addEntry,
     deleteEntry,
     refresh,
@@ -76,20 +75,7 @@ export function StudyJournalCard({ accessToken, isSignedIn, onSignIn }: StudyJou
   }
 
   // Loading
-  if (isLoading && !isInitialized) {
-    return (
-      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
-        <h2 className="text-base sm:text-lg font-bold mb-3 text-white flex items-center gap-2">
-          <span>📚</span>
-          <span>공부장</span>
-        </h2>
-        <div className="animate-pulse text-gray-400 text-center py-4">로딩 중...</div>
-      </div>
-    )
-  }
-
-  // Not initialized
-  if (!isInitialized) {
+  if (isLoading || !isInitialized) {
     return (
       <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         <h2 className="text-base sm:text-lg font-bold mb-3 text-white flex items-center gap-2">
@@ -100,20 +86,11 @@ export function StudyJournalCard({ accessToken, isSignedIn, onSignIn }: StudyJou
           {error ? (
             <>
               <p className="text-red-400 text-sm mb-3">{error}</p>
-              <p className="text-gray-500 text-xs mb-3">권한 문제일 수 있습니다. 로그아웃 후 다시 로그인해주세요.</p>
+              <p className="text-gray-500 text-xs">권한 문제일 수 있습니다. 로그아웃 후 다시 로그인해주세요.</p>
             </>
           ) : (
-            <p className="text-gray-400 text-sm mb-3">
-              Google Drive에 공부장 폴더와 문서를 생성합니다
-            </p>
+            <div className="animate-pulse text-gray-400">로딩 중...</div>
           )}
-          <button
-            onClick={initialize}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50"
-          >
-            {isLoading ? '생성 중...' : error ? '다시 시도' : '시작하기'}
-          </button>
         </div>
       </div>
     )
