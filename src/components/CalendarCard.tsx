@@ -423,19 +423,29 @@ export function CalendarCard() {
   const goToToday = () => setSelectedDate(new Date())
 
   // Filter and sort events for selected date
-  // Sort: upcoming events first (sorted by time), then past events at the bottom
+  // Sort: all-day → in-progress → upcoming → past (ended)
   const selectedDateEvents = events
     .filter(e => isSameDay(e.start, selectedDate))
     .sort((a, b) => {
       const now = new Date()
-      const aIsPast = !a.isAllDay && a.start < now
-      const bIsPast = !b.isAllDay && b.start < now
+
+      // Check if event is truly past (already ended)
+      const aIsPast = !a.isAllDay && a.end < now
+      const bIsPast = !b.isAllDay && b.end < now
+
+      // Check if event is in progress (started but not ended)
+      const aInProgress = !a.isAllDay && a.start <= now && a.end >= now
+      const bInProgress = !b.isAllDay && b.start <= now && b.end >= now
 
       // All-day events stay at top
       if (a.isAllDay && !b.isAllDay) return -1
       if (!a.isAllDay && b.isAllDay) return 1
 
-      // Past events go to bottom
+      // In-progress events come next
+      if (aInProgress && !bInProgress) return -1
+      if (!aInProgress && bInProgress) return 1
+
+      // Past (ended) events go to bottom
       if (!aIsPast && bIsPast) return -1
       if (aIsPast && !bIsPast) return 1
 
