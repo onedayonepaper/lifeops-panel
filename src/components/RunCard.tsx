@@ -22,14 +22,8 @@ export function RunCard({
   const isRestDay = dayState.runPlan === 'REST'
 
   return (
-    <div className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg card-hover ${
-      dayState.runDone
-        ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-        : 'bg-white dark:bg-gray-800'
-    }`}>
-      <h2 className={`text-base sm:text-lg font-bold mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 ${
-        dayState.runDone ? 'text-white' : 'text-gray-900 dark:text-white'
-      }`}>
+    <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg card-hover">
+      <h2 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-white">
         <span className="text-lg sm:text-xl">🏃</span>
         <span className="hidden sm:inline">러닝 / 운동</span>
         <span className="sm:hidden">운동</span>
@@ -43,12 +37,8 @@ export function RunCard({
             onClick={() => onUpdateRunPlan(plan.value)}
             className={`py-2 sm:py-3 px-1.5 sm:px-2 rounded-xl text-center touch-target transition-all ${
               dayState.runPlan === plan.value
-                ? dayState.runDone
-                  ? 'bg-white/30 text-white ring-2 ring-white/50'
-                  : 'bg-emerald-500 text-white ring-2 ring-emerald-300'
-                : dayState.runDone
-                ? 'bg-white/10 text-white/70 hover:bg-white/20'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-emerald-600 text-white ring-2 ring-emerald-400'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
             <div className="text-lg sm:text-xl mb-0.5 sm:mb-1">{plan.emoji}</div>
@@ -58,14 +48,8 @@ export function RunCard({
       </div>
 
       {/* Current Plan Info */}
-      <div className={`p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 ${
-        dayState.runDone
-          ? 'bg-white/10'
-          : 'bg-gray-100 dark:bg-gray-700'
-      }`}>
-        <div className={`text-center ${
-          dayState.runDone ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-        }`}>
+      <div className="p-2 sm:p-3 rounded-xl mb-3 sm:mb-4 bg-gray-700">
+        <div className="text-center text-gray-300">
           <span className="text-xl sm:text-2xl mr-1.5 sm:mr-2">{currentPlan.emoji}</span>
           <span className="text-sm sm:text-base font-medium">{currentPlan.description}</span>
         </div>
@@ -77,8 +61,8 @@ export function RunCard({
           onClick={onToggleRunDone}
           className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-semibold text-sm sm:text-base touch-target ${
             dayState.runDone
-              ? 'bg-white/20 hover:bg-white/30 text-white'
-              : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+              ? 'bg-gray-600 hover:bg-gray-500 text-white'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white'
           }`}
         >
           {dayState.runDone ? '완료 취소' : '운동 완료!'}
@@ -86,9 +70,7 @@ export function RunCard({
       )}
 
       {isRestDay && (
-        <div className={`text-center py-2 sm:py-3 text-sm sm:text-base ${
-          dayState.runDone ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
-        }`}>
+        <div className="text-center py-2 sm:py-3 text-sm sm:text-base text-gray-400">
           쉬는 것도 운동의 일부예요 💪
         </div>
       )}

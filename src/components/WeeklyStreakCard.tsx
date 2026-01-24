@@ -47,16 +47,16 @@ export function WeeklyStreakCard() {
 
   if (isLoading || !data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
-        <div className="animate-pulse h-24 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
+        <div className="animate-pulse h-24 bg-gray-700 rounded-xl" />
       </div>
     )
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 sm:p-4 shadow-lg">
+    <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+        <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2">
           <span className="text-lg sm:text-xl">📊</span>
           <span className="hidden sm:inline">이번 주 기록</span>
           <span className="sm:hidden">주간</span>
@@ -87,7 +87,7 @@ export function WeeklyStreakCard() {
       </div>
 
       {/* Legend & Stats */}
-      <div className="flex items-center justify-between text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 pt-2 sm:pt-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between text-[10px] sm:text-xs text-gray-400 pt-2 sm:pt-3 border-t border-gray-700">
         <div className="hidden sm:flex items-center gap-3">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-blue-600" />

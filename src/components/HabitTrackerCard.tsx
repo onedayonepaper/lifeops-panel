@@ -97,15 +97,15 @@ export function HabitTrackerCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
-        <div className="animate-pulse h-24 bg-white/20 rounded-xl" />
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
+        <div className="animate-pulse h-24 bg-gray-700 rounded-xl" />
       </div>
     )
   }
 
   return (
     <>
-      <div className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg text-white">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2">

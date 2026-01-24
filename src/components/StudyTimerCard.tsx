@@ -158,7 +158,7 @@ export const StudyTimerCard = forwardRef<TimerRef, StudyTimerCardProps>(function
   const config = getModeConfig()
 
   return (
-    <div className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg bg-gradient-to-br ${config.gradient} text-white`}>
+    <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg text-white">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <h2 className="text-base sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2">
