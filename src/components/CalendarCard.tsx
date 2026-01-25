@@ -601,33 +601,45 @@ export function CalendarCard() {
             const displayTitle = currentEvent.title.replace('✅ ', '')
 
             return (
-              <div className="mb-3 bg-blue-500/20 rounded-xl p-3 border border-blue-500/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-blue-400">⏰ 현재 일정</span>
+              <div className="mb-4 bg-gradient-to-br from-blue-600/30 to-blue-800/20 rounded-2xl p-4 sm:p-5 border border-blue-500/40 shadow-lg">
+                {/* Header with pulse indicator */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                  </span>
+                  <span className="text-sm font-semibold text-blue-300 uppercase tracking-wide">현재 진행 중</span>
                 </div>
-                <div className="flex items-start justify-between mb-2">
+
+                {/* Main content */}
+                <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex-1 min-w-0">
-                    <div className="text-white font-medium truncate">{displayTitle}</div>
-                    <div className="text-xs text-blue-400 font-mono mt-0.5">
+                    <div className="text-xl sm:text-2xl font-bold text-white leading-tight mb-2">{displayTitle}</div>
+                    <div className="text-sm sm:text-base text-blue-300 font-mono">
                       {format(currentEvent.start, 'HH:mm')} – {format(currentEvent.end, 'HH:mm')}
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-2">
-                    <div className="text-xl font-bold text-blue-400">{remainingMinutes}</div>
-                    <div className="text-xs text-gray-400">분 남음</div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-4xl sm:text-5xl font-bold text-blue-400">{remainingMinutes}</div>
+                    <div className="text-sm text-blue-300/80">분 남음</div>
                   </div>
                 </div>
-                <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+
+                {/* Progress bar */}
+                <div className="h-2.5 bg-gray-700/60 rounded-full overflow-hidden mb-3">
                   <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
+                <div className="text-xs text-blue-300/70 text-right mb-2">{progress}% 완료</div>
+
+                {/* Next event preview */}
                 {nextEvent && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                    <span>다음:</span>
-                    <span className="text-gray-300 truncate">{nextEvent.title.replace('✅ ', '')}</span>
-                    <span className="bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">
+                  <div className="flex items-center gap-2 text-sm text-gray-300 bg-gray-800/50 rounded-lg px-3 py-2">
+                    <span className="text-gray-500">다음:</span>
+                    <span className="flex-1 truncate font-medium">{nextEvent.title.replace('✅ ', '')}</span>
+                    <span className="bg-gray-700 px-2 py-0.5 rounded text-xs flex-shrink-0 text-blue-300">
                       {Math.round((nextEvent.start.getTime() - now.getTime()) / 60000)}분 후
                     </span>
                   </div>
