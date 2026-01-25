@@ -9,9 +9,6 @@ import { TopBar } from './components/TopBar'
 import { SettingsModal } from './components/SettingsModal'
 import { Sidebar } from './components/Sidebar'
 import { CalendarCard } from './components/CalendarCard'
-import { TasksCard } from './components/TasksCard'
-import { BucketListCard } from './components/BucketListCard'
-import { StudyJournalCard } from './components/StudyJournalCard'
 import { GSECard } from './components/GSECard'
 import { CalendarPage } from './pages/CalendarPage'
 import { TasksPage } from './pages/TasksPage'
@@ -88,19 +85,9 @@ function HomePage() {
   }, [])
 
   return (
-    <div className="space-y-2 sm:space-y-4">
-      {/* Primary Row - Calendar & GSE (2 columns on large screens) */}
-      <div className="grid gap-2 sm:gap-4 md:grid-cols-2">
-        <CalendarCard />
-        <GSECard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
-      </div>
-
-      {/* Secondary Row - Tasks, BucketList, StudyJournal */}
-      <div className="grid gap-2 sm:gap-4 md:grid-cols-3">
-        <TasksCard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
-        <BucketListCard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
-        <StudyJournalCard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
-      </div>
+    <div className="grid gap-2 sm:gap-4 md:grid-cols-2">
+      <CalendarCard />
+      <GSECard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
     </div>
   )
 }
