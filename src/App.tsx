@@ -15,6 +15,7 @@ import { TasksPage } from './pages/TasksPage'
 import { BucketListPage } from './pages/BucketListPage'
 import { StudyJournalPage } from './pages/StudyJournalPage'
 import { GSEPage } from './pages/GSEPage'
+import { SpecPage } from './pages/SpecPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
@@ -102,6 +103,7 @@ function App() {
         <Route path="/bucket-list" element={<BucketListPage />} />
         <Route path="/study-journal" element={<StudyJournalPage />} />
         <Route path="/goals" element={<GSEPage />} />
+        <Route path="/spec" element={<SpecPage />} />
       </Routes>
     </Layout>
   )
