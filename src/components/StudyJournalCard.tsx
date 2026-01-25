@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useStudyJournal } from '../hooks/useStudyJournal'
 import type { StudyEntry } from '../hooks/useStudyJournal'
 
@@ -144,16 +145,18 @@ export function StudyJournalCard({ accessToken, isSignedIn, onSignIn }: StudyJou
     <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-          <span>📚</span>
-          <span className="hidden sm:inline">공부장</span>
-          <span className="sm:hidden">공부</span>
-          {entries.length > 0 && (
-            <span className="text-xs font-normal text-gray-400">
-              ({entries.length})
-            </span>
-          )}
-        </h2>
+        <Link to="/study-journal" className="hover:opacity-80 transition-opacity">
+          <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <span>📚</span>
+            <span className="hidden sm:inline">공부장</span>
+            <span className="sm:hidden">공부</span>
+            {entries.length > 0 && (
+              <span className="text-xs font-normal text-gray-400">
+                ({entries.length})
+              </span>
+            )}
+          </h2>
+        </Link>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowForm(!showForm)}

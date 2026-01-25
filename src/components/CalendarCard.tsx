@@ -544,7 +544,7 @@ export function CalendarCard() {
             className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2 hover:text-blue-400 transition-colors"
           >
             <span>📅</span>
-            <span className="hidden sm:inline">캘린더</span>
+            <span>캘린더</span>
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -579,6 +579,64 @@ export function CalendarCard() {
             </button>
           </div>
         </div>
+
+        {/* Current Routine - only show on today */}
+        {isToday(selectedDate) && (() => {
+          const now = new Date()
+          const currentEvent = selectedDateEvents.find(e =>
+            !e.isAllDay && e.start <= now && e.end >= now
+          )
+          const nextEvent = selectedDateEvents.find(e =>
+            !e.isAllDay && e.start > now
+          )
+
+          if (currentEvent) {
+            const startMinutes = currentEvent.start.getHours() * 60 + currentEvent.start.getMinutes()
+            const endMinutes = currentEvent.end.getHours() * 60 + currentEvent.end.getMinutes()
+            const currentMinutes = now.getHours() * 60 + now.getMinutes()
+            const totalDuration = endMinutes - startMinutes
+            const elapsed = currentMinutes - startMinutes
+            const progress = Math.round((elapsed / totalDuration) * 100)
+            const remainingMinutes = endMinutes - currentMinutes
+            const displayTitle = currentEvent.title.replace('✅ ', '')
+
+            return (
+              <div className="mb-3 bg-blue-500/20 rounded-xl p-3 border border-blue-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-blue-400">⏰ 현재 일정</span>
+                </div>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white font-medium truncate">{displayTitle}</div>
+                    <div className="text-xs text-blue-400 font-mono mt-0.5">
+                      {format(currentEvent.start, 'HH:mm')} – {format(currentEvent.end, 'HH:mm')}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-2">
+                    <div className="text-xl font-bold text-blue-400">{remainingMinutes}</div>
+                    <div className="text-xs text-gray-400">분 남음</div>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                {nextEvent && (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                    <span>다음:</span>
+                    <span className="text-gray-300 truncate">{nextEvent.title.replace('✅ ', '')}</span>
+                    <span className="bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">
+                      {Math.round((nextEvent.start.getTime() - now.getTime()) / 60000)}분 후
+                    </span>
+                  </div>
+                )}
+              </div>
+            )
+          }
+          return null
+        })()}
 
         {/* Date Navigation */}
         <div className="flex items-center justify-between mb-3 bg-gray-700/50 rounded-xl p-2 gap-1">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useGoogleTasks, type Task } from '../hooks/useGoogleTasks'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -360,7 +361,7 @@ export function TasksCard({ accessToken, isSignedIn, onSignIn }: TasksCardProps)
       <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+          <Link to="/tasks" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2">
               <span>✅</span>
               <span>할일</span>
@@ -370,7 +371,7 @@ export function TasksCard({ accessToken, isSignedIn, onSignIn }: TasksCardProps)
                 {incompleteTasks.length}
               </span>
             )}
-          </div>
+          </Link>
           <div className="flex items-center gap-0.5 sm:gap-1">
             {/* List selector */}
             {taskLists.length > 1 && (

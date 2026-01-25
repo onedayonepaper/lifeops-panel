@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useBucketList } from '../hooks/useBucketList'
 import type { BucketItem } from '../hooks/useBucketList'
 
@@ -136,16 +137,18 @@ export function BucketListCard({ accessToken, isSignedIn, onSignIn }: BucketList
     <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-          <span>🎯</span>
-          <span className="hidden sm:inline">버킷리스트</span>
-          <span className="sm:hidden">버킷</span>
-          {stats.total > 0 && (
-            <span className="text-xs font-normal text-gray-400">
-              ({stats.completed}/{stats.total})
-            </span>
-          )}
-        </h2>
+        <Link to="/bucket-list" className="hover:opacity-80 transition-opacity">
+          <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <span>🎯</span>
+            <span className="hidden sm:inline">버킷리스트</span>
+            <span className="sm:hidden">버킷</span>
+            {stats.total > 0 && (
+              <span className="text-xs font-normal text-gray-400">
+                ({stats.completed}/{stats.total})
+              </span>
+            )}
+          </h2>
+        </Link>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
