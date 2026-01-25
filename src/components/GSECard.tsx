@@ -111,10 +111,10 @@ export function GSECard({ accessToken, isSignedIn, onSignIn }: GSECardProps) {
       {/* Header with actions */}
       <div className="flex items-center justify-between mb-3">
         <Link to="/goals" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-lg">🎯</span>
-          <span className="text-xs text-purple-400 font-medium">GOAL</span>
+          <span className="text-xl">🎯</span>
+          <span className="text-lg sm:text-xl text-purple-400 font-bold">목표</span>
           {isSaving && (
-            <span className="text-xs text-gray-500">저장 중...</span>
+            <span className="text-xs text-gray-500 ml-1">저장 중...</span>
           )}
         </Link>
         <div className="flex items-center gap-1">
@@ -156,7 +156,7 @@ export function GSECard({ accessToken, isSignedIn, onSignIn }: GSECardProps) {
         ) : (
           <p
             onClick={() => { setEditMode('goal'); setEditValue(data.goal) }}
-            className="text-white font-bold text-sm sm:text-base cursor-pointer hover:text-purple-300 transition-colors"
+            className="text-white font-bold text-lg sm:text-xl cursor-pointer hover:text-purple-300 transition-colors leading-tight"
           >
             {data.goal}
           </p>
