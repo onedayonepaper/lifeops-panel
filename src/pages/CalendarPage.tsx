@@ -327,23 +327,33 @@ export function CalendarPage() {
   const [importDate, setImportDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null)
-  const [routineText, setRoutineText] = useState(`11:30-12:00 물 한 컵 → 세수/샤워 → 가벼운 스트레칭 5분 → 오늘 할 일 3줄 메모
-12:00-13:00 주말 브런치 + 먹고 10분 걷기
-13:10-14:40 JLPT N2 공부 90분 (히라가나/단어/문장)
-14:40-15:20 멍때리기/커피/정리 시간
-15:20-16:20 취업 준비 60분 (STAR 형식 정리 or 회사 리스트업)
-16:30-17:20 운동 (걷기+러닝 + 스쿼트/푸시업/플랭크)
-18:00-19:00 저녁 + 먹고 10분 걷기
-19:10-20:10 포트폴리오/프로젝트 60분 (커밋 1개 목표)`)
+  const [routineText, setRoutineText] = useState(`11:30-12:10 몸 깨우기 + 정리 (물 한 컵, 세면/양치, 스트레칭 5분, 방 환기, 할 일 메모)
+12:10-12:40 첫 끼(브런치) - 밥/빵 + 단백질, 커피/차 한 번
+12:40-13:20 유산소 (워밍업 5분 → 천국의 계단 20분 → 쿨다운 5분 + 스트레칭)
+13:20-14:00 샤워 + 작업 세팅 (샤워/로션/옷, 책상 정리, 타이머 준비)
+14:00-15:30 취업 준비 [핵심1] - 최근 1개 프로젝트 정리, STAR 3줄, 포트폴리오 링크 모으기
+15:30-15:50 쉬는 시간 (10분 걷기/정리/설거지, 눈/목 스트레칭)
+15:50-16:50 일본어 1시간 [핵심2] - 히라가나 10개 + 단어 5개 + 소리내어 읽기
+16:50-18:10 개발/포트폴리오 [핵심3] - 프로젝트 1개, 기능 1개, README + 스크린샷, 커밋 1번
+18:10-18:50 근력운동 30분 + 마무리 (스쿼트/푸쉬업/로우/플랭크 + 스트레칭 5분)
+18:50-20:00 저녁 + 리셋 (저녁 식사, 식후 10분 걷기)
+20:00-21:00 지원/정리 1시간 - 회사/공고 3개 저장, 이력서 수정 메모 3줄
+21:00-23:00 자유시간 (가벼운 취미/휴식)
+23:00-23:30 마감 루틴 - 내일 할 일 3개 적고 종료`)
   const [parsedRoutines, setParsedRoutines] = useState<{ startTime: string; endTime: string; title: string }[]>([
-    { startTime: '11:30', endTime: '12:00', title: '물 한 컵 → 세수/샤워 → 가벼운 스트레칭 5분 → 오늘 할 일 3줄 메모' },
-    { startTime: '12:00', endTime: '13:00', title: '주말 브런치 + 먹고 10분 걷기' },
-    { startTime: '13:10', endTime: '14:40', title: 'JLPT N2 공부 90분 (히라가나/단어/문장)' },
-    { startTime: '14:40', endTime: '15:20', title: '멍때리기/커피/정리 시간' },
-    { startTime: '15:20', endTime: '16:20', title: '취업 준비 60분 (STAR 형식 정리 or 회사 리스트업)' },
-    { startTime: '16:30', endTime: '17:20', title: '운동 (걷기+러닝 + 스쿼트/푸시업/플랭크)' },
-    { startTime: '18:00', endTime: '19:00', title: '저녁 + 먹고 10분 걷기' },
-    { startTime: '19:10', endTime: '20:10', title: '포트폴리오/프로젝트 60분 (커밋 1개 목표)' },
+    { startTime: '11:30', endTime: '12:10', title: '몸 깨우기 + 정리 (물 한 컵, 세면/양치, 스트레칭 5분, 방 환기, 할 일 메모)' },
+    { startTime: '12:10', endTime: '12:40', title: '첫 끼(브런치) - 밥/빵 + 단백질, 커피/차 한 번' },
+    { startTime: '12:40', endTime: '13:20', title: '유산소 (워밍업 5분 → 천국의 계단 20분 → 쿨다운 5분 + 스트레칭)' },
+    { startTime: '13:20', endTime: '14:00', title: '샤워 + 작업 세팅 (샤워/로션/옷, 책상 정리, 타이머 준비)' },
+    { startTime: '14:00', endTime: '15:30', title: '취업 준비 [핵심1] - 최근 1개 프로젝트 정리, STAR 3줄, 포트폴리오 링크 모으기' },
+    { startTime: '15:30', endTime: '15:50', title: '쉬는 시간 (10분 걷기/정리/설거지, 눈/목 스트레칭)' },
+    { startTime: '15:50', endTime: '16:50', title: '일본어 1시간 [핵심2] - 히라가나 10개 + 단어 5개 + 소리내어 읽기' },
+    { startTime: '16:50', endTime: '18:10', title: '개발/포트폴리오 [핵심3] - 프로젝트 1개, 기능 1개, README + 스크린샷, 커밋 1번' },
+    { startTime: '18:10', endTime: '18:50', title: '근력운동 30분 + 마무리 (스쿼트/푸쉬업/로우/플랭크 + 스트레칭 5분)' },
+    { startTime: '18:50', endTime: '20:00', title: '저녁 + 리셋 (저녁 식사, 식후 10분 걷기)' },
+    { startTime: '20:00', endTime: '21:00', title: '지원/정리 1시간 - 회사/공고 3개 저장, 이력서 수정 메모 3줄' },
+    { startTime: '21:00', endTime: '23:00', title: '자유시간 (가벼운 취미/휴식)' },
+    { startTime: '23:00', endTime: '23:30', title: '마감 루틴 - 내일 할 일 3개 적고 종료' },
   ])
   const [, setTick] = useState(0)
 

@@ -8,18 +8,21 @@ import { requestNotificationPermission } from './utils/notifications'
 import { TopBar } from './components/TopBar'
 import { SettingsModal } from './components/SettingsModal'
 import { Sidebar } from './components/Sidebar'
-import { CalendarCard } from './components/CalendarCard'
-import { GSECard } from './components/GSECard'
+import { DailyRoundCard } from './components/DailyRoundCard'
+import { DashboardPage } from './pages/DashboardPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { TasksPage } from './pages/TasksPage'
 import { BucketListPage } from './pages/BucketListPage'
 import { StudyJournalPage } from './pages/StudyJournalPage'
 import { GSEPage } from './pages/GSEPage'
 import { SpecPage } from './pages/SpecPage'
+import { ApplyPage } from './pages/ApplyPage'
+import { LifeAnchorsPage } from './pages/LifeAnchorsPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
   const { dayState, settings, isLoading } = useDayState()
+  const { isSignedIn, signOut } = useGoogleAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const isNight = useNightMode(
@@ -51,6 +54,8 @@ function Layout({ children }: { children: ReactNode }) {
           isNightMode={isNight}
           onRefreshClick={() => window.location.reload()}
           onSettingsClick={() => setIsSettingsOpen(true)}
+          isSignedIn={isSignedIn}
+          onSignOut={signOut}
         />
 
         <main className="p-2 sm:p-4 pb-8">
@@ -68,27 +73,15 @@ function Layout({ children }: { children: ReactNode }) {
 }
 
 function HomePage() {
-  const { error, clearError } = useDayState()
-  const { accessToken, isSignedIn, signIn } = useGoogleAuth()
-  const { showToast } = useToast()
-
-  // Show error toast when error occurs
-  useEffect(() => {
-    if (error) {
-      showToast(error, 'error')
-      clearError()
-    }
-  }, [error, showToast, clearError])
-
   // Request notification permission on mount
   useEffect(() => {
     requestNotificationPermission()
   }, [])
 
   return (
-    <div className="grid gap-2 sm:gap-4 md:grid-cols-2">
-      <CalendarCard />
-      <GSECard accessToken={accessToken} isSignedIn={isSignedIn} onSignIn={signIn} />
+    <div>
+      {/* 오늘 카드 - 메인 페이지에서는 이것만 보여줌 */}
+      <DailyRoundCard />
     </div>
   )
 }
@@ -98,12 +91,15 @@ function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/bucket-list" element={<BucketListPage />} />
         <Route path="/study-journal" element={<StudyJournalPage />} />
         <Route path="/goals" element={<GSEPage />} />
         <Route path="/spec" element={<SpecPage />} />
+        <Route path="/apply" element={<ApplyPage />} />
+        <Route path="/life-anchors" element={<LifeAnchorsPage />} />
       </Routes>
     </Layout>
   )

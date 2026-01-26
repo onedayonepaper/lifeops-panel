@@ -8,10 +8,13 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: '대시보드', icon: '🏠' },
+  { path: '/', label: '오늘', icon: '🎯' },
+  { path: '/dashboard', label: '대시보드', icon: '📊' },
   { path: '/calendar', label: '캘린더', icon: '📅' },
-  { path: '/goals', label: '목표', icon: '🎯' },
+  { path: '/life-anchors', label: '생활 앵커', icon: '🔔' },
+  { path: '/goals', label: '목표', icon: '🏆' },
   { path: '/spec', label: '스펙', icon: '📋' },
+  { path: '/apply', label: '지원', icon: '📝' },
   { path: '/tasks', label: '할일', icon: '✅' },
   { path: '/bucket-list', label: '버킷리스트', icon: '🪣' },
   { path: '/study-journal', label: '공부장', icon: '📚' },

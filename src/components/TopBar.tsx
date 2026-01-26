@@ -7,9 +7,11 @@ interface TopBarProps {
   isNightMode: boolean
   onSettingsClick: () => void
   onRefreshClick: () => void
+  isSignedIn?: boolean
+  onSignOut?: () => void
 }
 
-export function TopBar({ dayState, isNightMode, onSettingsClick, onRefreshClick }: TopBarProps) {
+export function TopBar({ dayState, isNightMode, onSettingsClick, onRefreshClick, isSignedIn, onSignOut }: TopBarProps) {
   const [time, setTime] = useState(formatTimeWithSeconds())
   const [date, setDate] = useState(formatDateKorean())
 
@@ -44,6 +46,18 @@ export function TopBar({ dayState, isNightMode, onSettingsClick, onRefreshClick 
       </div>
 
       <div className="flex items-center gap-1">
+        {isSignedIn && onSignOut && (
+          <button
+            onClick={onSignOut}
+            className="p-2 rounded-lg hover:bg-gray-700 active:bg-gray-600 touch-target text-gray-400 hover:text-white"
+            aria-label="로그아웃"
+            title="Google 로그아웃"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        )}
         <button
           onClick={onRefreshClick}
           className="p-2 rounded-lg hover:bg-gray-700 active:bg-gray-600 touch-target"

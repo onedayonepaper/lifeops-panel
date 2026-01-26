@@ -114,7 +114,7 @@ export function GSECard({ accessToken, isSignedIn, onSignIn }: GSECardProps) {
           <span className="text-xl">🎯</span>
           <span className="text-lg sm:text-xl text-purple-400 font-bold">목표</span>
           {isSaving && (
-            <span className="text-xs text-gray-500 ml-1">저장 중...</span>
+            <span className="text-xs text-purple-300 ml-1 animate-pulse">저장 중...</span>
           )}
         </Link>
         <div className="flex items-center gap-1">
