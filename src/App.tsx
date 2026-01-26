@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom'
 import { useDayState } from './hooks/useDayState'
 import { useNightMode } from './hooks/useNightMode'
 import { useGoogleAuth } from './contexts/GoogleAuthContext'
-import { useToast } from './components/Toast'
 import { requestNotificationPermission } from './utils/notifications'
 import { TopBar } from './components/TopBar'
 import { SettingsModal } from './components/SettingsModal'
@@ -18,6 +17,7 @@ import { GSEPage } from './pages/GSEPage'
 import { SpecPage } from './pages/SpecPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { LifeAnchorsPage } from './pages/LifeAnchorsPage'
+import { ClockPage } from './pages/ClockPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
@@ -100,6 +100,7 @@ function App() {
         <Route path="/spec" element={<SpecPage />} />
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/life-anchors" element={<LifeAnchorsPage />} />
+        <Route path="/clock" element={<ClockPage />} />
       </Routes>
     </Layout>
   )

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { formatDateKorean, formatTimeWithSeconds } from '../utils/date'
 import type { DayState } from '../store/db'
 
@@ -41,9 +42,13 @@ export function TopBar({ dayState, isNightMode, onSettingsClick, onRefreshClick,
         </div>
       </div>
 
-      <div className="text-xl sm:text-3xl font-mono font-light tracking-wider">
+      <Link
+        to="/clock"
+        className="text-xl sm:text-3xl font-mono font-light tracking-wider hover:text-blue-400 transition-colors cursor-pointer"
+        title="전체 화면 시계 보기"
+      >
         {time}
-      </div>
+      </Link>
 
       <div className="flex items-center gap-1">
         {isSignedIn && onSignOut && (
