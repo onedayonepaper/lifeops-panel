@@ -12,6 +12,9 @@ export interface PersonalInfo {
   phone: string
   email: string
   address: string
+  blog?: string
+  github?: string
+  portfolio?: string
 }
 
 export interface Education {
@@ -165,6 +168,9 @@ export function useGoogleDocs(accessToken: string | null) {
     lines.push(`연락처: ${data.personalInfo.phone}`)
     lines.push(`이메일: ${data.personalInfo.email}`)
     lines.push(`주소: ${data.personalInfo.address}`)
+    if (data.personalInfo.blog) lines.push(`블로그: ${data.personalInfo.blog}`)
+    if (data.personalInfo.github) lines.push(`GitHub: ${data.personalInfo.github}`)
+    if (data.personalInfo.portfolio) lines.push(`포트폴리오: ${data.personalInfo.portfolio}`)
     lines.push('')
 
     if (data.education.length > 0) {

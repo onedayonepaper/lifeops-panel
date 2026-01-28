@@ -42,7 +42,10 @@ const initialFormData: ResumeData = {
     birthDate: '',
     phone: '010-5711-7309',
     email: 'eoduf1292@naver.com',
-    address: ''
+    address: '',
+    blog: 'https://onedayonepaper.tistory.com',
+    github: '',
+    portfolio: ''
   },
   education: [
     {
@@ -631,6 +634,27 @@ export default function ResumePage() {
               onChange={e => handlePersonalInfoChange('address', e.target.value)}
               placeholder="주소"
               className="sm:col-span-2 bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="url"
+              value={formData.personalInfo.blog || ''}
+              onChange={e => handlePersonalInfoChange('blog', e.target.value)}
+              placeholder="블로그 (예: https://blog.example.com)"
+              className="sm:col-span-2 bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="url"
+              value={formData.personalInfo.github || ''}
+              onChange={e => handlePersonalInfoChange('github', e.target.value)}
+              placeholder="GitHub (예: https://github.com/username)"
+              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="url"
+              value={formData.personalInfo.portfolio || ''}
+              onChange={e => handlePersonalInfoChange('portfolio', e.target.value)}
+              placeholder="포트폴리오 URL"
+              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>

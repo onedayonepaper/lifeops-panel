@@ -92,6 +92,25 @@ export default function ResumeDetailPage() {
           {data.personalInfo.address && (
             <p className="mt-2 text-blue-100">📍 {data.personalInfo.address}</p>
           )}
+          {(data.personalInfo.blog || data.personalInfo.github || data.personalInfo.portfolio) && (
+            <div className="flex flex-wrap gap-3 mt-3">
+              {data.personalInfo.blog && (
+                <a href={data.personalInfo.blog} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm transition-colors">
+                  📝 블로그
+                </a>
+              )}
+              {data.personalInfo.github && (
+                <a href={data.personalInfo.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm transition-colors">
+                  💻 GitHub
+                </a>
+              )}
+              {data.personalInfo.portfolio && (
+                <a href={data.personalInfo.portfolio} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm transition-colors">
+                  🎨 포트폴리오
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-8 space-y-8 text-gray-800">
