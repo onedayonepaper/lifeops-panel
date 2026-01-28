@@ -1,13 +1,54 @@
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { useGoogleAuth } from '../contexts/GoogleAuthContext'
 import { useGoogleDocs } from '../hooks/useGoogleDocs'
+
+interface TilPost {
+  name: string
+  path: string
+  html_url: string
+  category: string
+}
 
 export default function ResumeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { accessToken } = useGoogleAuth()
   const { getResumeData, getResumeMeta, getDocumentUrl, deleteResume } = useGoogleDocs(accessToken)
+  const [tilPosts, setTilPosts] = useState<TilPost[]>([])
+
+  useEffect(() => {
+    async function fetchTilPosts() {
+      try {
+        const categories = ['php', 'oracle', 'javascript', 'linux', 'go', 'algorithm']
+        const allPosts: TilPost[] = []
+
+        for (const category of categories) {
+          const response = await fetch(
+            `https://api.github.com/repos/onedayonepaper/til/contents/${category}`
+          )
+          if (response.ok) {
+            const files = await response.json()
+            const mdFiles = files.filter((f: { name: string }) => f.name.endsWith('.md'))
+            mdFiles.forEach((file: { name: string; path: string; html_url: string }) => {
+              allPosts.push({
+                ...file,
+                category: category.toUpperCase()
+              })
+            })
+          }
+        }
+
+        // 최근 3개만 표시 (역순으로 정렬)
+        setTilPosts(allPosts.slice(-3).reverse())
+      } catch (error) {
+        console.error('TIL 포스트 로딩 실패:', error)
+      }
+    }
+
+    fetchTilPosts()
+  }, [])
 
   const meta = id ? getResumeMeta(id) : null
   const data = id ? getResumeData(id) : null
@@ -142,6 +183,43 @@ export default function ResumeDetailPage() {
                   </span>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* TIL Blog Posts */}
+          {tilPosts.length > 0 && (
+            <section>
+              <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-blue-600">
+                📚 최근 학습 기록 (TIL)
+              </h2>
+              <div className="space-y-3">
+                {tilPosts.map((post, idx) => (
+                  <a
+                    key={idx}
+                    href={post.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                        {post.category}
+                      </span>
+                      <span className="text-gray-800 font-medium">
+                        {post.name.replace('.md', '').replace(/-/g, ' ')}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+              <a
+                href="https://github.com/onedayonepaper/til"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                → 전체 TIL 보기
+              </a>
             </section>
           )}
 
