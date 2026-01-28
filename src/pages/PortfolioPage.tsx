@@ -7,13 +7,18 @@ interface ProjectRecord {
   id: string
   date: string
   projectName: string
+  company: string     // 회사명
   problem: string    // 문제
   action: string     // 내가 한 일
   tech: string       // 기술
   result: string     // 결과
+  metrics: string    // 정량적 성과 (예: 75% 개선)
   link: string       // 프로젝트 링크
   screenshots: string // 데모 스크린샷 URL
   demoVideo: string   // 데모 영상 URL
+  flowDiagram: string // 기능 흐름도 URL
+  documentation: string // 상세 문서 URL
+  isRepresentative: boolean // 대표 프로젝트 여부
 }
 
 function getTodayKey(): string {
@@ -26,13 +31,18 @@ function rowToRecord(row: string[]): ProjectRecord {
     id: row[0] || '',
     date: row[1] || '',
     projectName: row[2] || '',
-    problem: row[3] || '',
-    action: row[4] || '',
-    tech: row[5] || '',
-    result: row[6] || '',
-    link: row[7] || '',
-    screenshots: row[8] || '',
-    demoVideo: row[9] || ''
+    company: row[3] || '',
+    problem: row[4] || '',
+    action: row[5] || '',
+    tech: row[6] || '',
+    result: row[7] || '',
+    metrics: row[8] || '',
+    link: row[9] || '',
+    screenshots: row[10] || '',
+    demoVideo: row[11] || '',
+    flowDiagram: row[12] || '',
+    documentation: row[13] || '',
+    isRepresentative: row[14] === 'true'
   }
 }
 
@@ -41,13 +51,18 @@ function recordToRow(record: ProjectRecord): string[] {
     record.id,
     record.date,
     record.projectName,
+    record.company,
     record.problem,
     record.action,
     record.tech,
     record.result,
+    record.metrics,
     record.link,
     record.screenshots,
-    record.demoVideo
+    record.demoVideo,
+    record.flowDiagram,
+    record.documentation,
+    record.isRepresentative ? 'true' : 'false'
   ]
 }
 
@@ -69,25 +84,38 @@ export default function PortfolioPage() {
   )
 
   const [projectName, setProjectName] = useState('')
+  const [company, setCompany] = useState('')
   const [problem, setProblem] = useState('')
   const [action, setAction] = useState('')
   const [tech, setTech] = useState('')
   const [result, setResult] = useState('')
+  const [metrics, setMetrics] = useState('')
   const [link, setLink] = useState('')
   const [screenshots, setScreenshots] = useState('')
   const [demoVideo, setDemoVideo] = useState('')
+  const [flowDiagram, setFlowDiagram] = useState('')
+  const [documentation, setDocumentation] = useState('')
+  const [isRepresentative, setIsRepresentative] = useState(false)
 
   const todayKey = getTodayKey()
 
+  // 대표 프로젝트만 필터링
+  const representativeProjects = records.filter(r => r.isRepresentative)
+
   const clearForm = () => {
     setProjectName('')
+    setCompany('')
     setProblem('')
     setAction('')
     setTech('')
     setResult('')
+    setMetrics('')
     setLink('')
     setScreenshots('')
     setDemoVideo('')
+    setFlowDiagram('')
+    setDocumentation('')
+    setIsRepresentative(false)
   }
 
   const handleSave = useCallback(async () => {
@@ -100,13 +128,18 @@ export default function PortfolioPage() {
       id: crypto.randomUUID(),
       date: todayKey,
       projectName: projectName.trim(),
+      company: company.trim(),
       problem: problem.trim(),
       action: action.trim(),
       tech: tech.trim(),
       result: result.trim(),
+      metrics: metrics.trim(),
       link: link.trim(),
       screenshots: screenshots.trim(),
-      demoVideo: demoVideo.trim()
+      demoVideo: demoVideo.trim(),
+      flowDiagram: flowDiagram.trim(),
+      documentation: documentation.trim(),
+      isRepresentative
     }
 
     const success = await addItem(newRecord)
@@ -117,17 +150,20 @@ export default function PortfolioPage() {
       // 폼 초기화
       clearForm()
     }
-  }, [projectName, problem, action, tech, result, link, screenshots, demoVideo, todayKey, addItem])
+  }, [projectName, company, problem, action, tech, result, metrics, link, screenshots, demoVideo, flowDiagram, documentation, isRepresentative, todayKey, addItem])
 
   const handleCopy = useCallback((record: ProjectRecord) => {
-    const text = `[${record.projectName}]
+    const text = `[${record.projectName}] ${record.company ? `@ ${record.company}` : ''}
 - 문제: ${record.problem || '-'}
 - 내가 한 일: ${record.action || '-'}
 - 기술: ${record.tech || '-'}
 - 결과: ${record.result || '-'}
+- 정량적 성과: ${record.metrics || '-'}
 - 링크: ${record.link || '-'}
 - 스크린샷: ${record.screenshots || '-'}
-- 데모영상: ${record.demoVideo || '-'}`
+- 데모영상: ${record.demoVideo || '-'}
+- 흐름도: ${record.flowDiagram || '-'}
+- 문서: ${record.documentation || '-'}`
 
     navigator.clipboard.writeText(text)
     alert('클립보드에 복사되었습니다!')
@@ -237,6 +273,126 @@ export default function PortfolioPage() {
         </div>
       )}
 
+      {/* 대표 프로젝트 (증거 포함) */}
+      {representativeProjects.length > 0 && (
+        <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border-2 border-yellow-300 dark:border-yellow-700">
+          <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span>⭐</span> 대표 프로젝트 ({representativeProjects.length}개)
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">- 이력서 증거 자료</span>
+          </h3>
+          <div className="space-y-4">
+            {representativeProjects.map(record => (
+              <div
+                key={record.id}
+                className="p-5 bg-white dark:bg-gray-800 rounded-xl border border-yellow-200 dark:border-yellow-800 shadow-sm"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                      {record.projectName}
+                      {record.metrics && (
+                        <span className="text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                          📊 {record.metrics}
+                        </span>
+                      )}
+                    </h4>
+                    {record.company && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">@ {record.company}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleCopy(record)}
+                    className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  >
+                    복사
+                  </button>
+                </div>
+
+                {/* STAR 형식 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-sm">
+                  <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <span className="font-semibold text-orange-600 dark:text-orange-400">문제 (Situation)</span>
+                    <p className="text-gray-700 dark:text-gray-300 mt-1">{record.problem || '-'}</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">내가 한 일 (Action)</span>
+                    <p className="text-gray-700 dark:text-gray-300 mt-1">{record.action || '-'}</p>
+                  </div>
+                  <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <span className="font-semibold text-purple-600 dark:text-purple-400">기술 (Tech)</span>
+                    <p className="text-gray-700 dark:text-gray-300 mt-1">{record.tech || '-'}</p>
+                  </div>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <span className="font-semibold text-green-600 dark:text-green-400">결과 (Result)</span>
+                    <p className="text-gray-700 dark:text-gray-300 mt-1">{record.result || '-'}</p>
+                  </div>
+                </div>
+
+                {/* 증거 자료 링크 */}
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">📎 증거 자료</p>
+                  <div className="flex flex-wrap gap-2">
+                    {record.screenshots && (
+                      <a
+                        href={record.screenshots}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg text-sm hover:bg-pink-200 dark:hover:bg-pink-900/50 transition-colors"
+                      >
+                        🖼️ 스크린샷
+                      </a>
+                    )}
+                    {record.flowDiagram && (
+                      <a
+                        href={record.flowDiagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                      >
+                        📊 흐름도
+                      </a>
+                    )}
+                    {record.documentation && (
+                      <a
+                        href={record.documentation}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg text-sm hover:bg-cyan-200 dark:hover:bg-cyan-900/50 transition-colors"
+                      >
+                        📄 문서
+                      </a>
+                    )}
+                    {record.demoVideo && (
+                      <a
+                        href={record.demoVideo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                      >
+                        🎬 데모영상
+                      </a>
+                    )}
+                    {record.link && (
+                      <a
+                        href={record.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        🔗 프로젝트 링크
+                      </a>
+                    )}
+                    {!record.screenshots && !record.flowDiagram && !record.documentation && !record.demoVideo && !record.link && (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 italic">증거 자료 없음 - 추가 필요!</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 포트폴리오 모음 */}
       {records.length > 0 && (
         <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -256,11 +412,24 @@ export default function PortfolioPage() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
+                    {record.isRepresentative && (
+                      <span className="text-yellow-500">⭐</span>
+                    )}
                     <span className="font-bold text-gray-900 dark:text-white">
                       {record.projectName}
                     </span>
-                    {record.date === todayKey && (
+                    {record.company && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        @ {record.company}
+                      </span>
+                    )}
+                    {record.metrics && (
                       <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                        {record.metrics}
+                      </span>
+                    )}
+                    {record.date === todayKey && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
                         오늘
                       </span>
                     )}
@@ -356,121 +525,222 @@ export default function PortfolioPage() {
           <span>✏️</span> 포트폴리오 입력
         </h2>
 
-        {/* 프로젝트명 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            프로젝트명 *
-          </label>
-          <input
-            type="text"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            placeholder="프로젝트명"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-              bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          />
-        </div>
-
-        {/* 4줄 입력 */}
-        <div className="space-y-3">
+        {/* 기본 정보 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-1">
-              문제: (어떤 문제/니즈가 있었나?)
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              프로젝트명 *
             </label>
             <input
               type="text"
-              value={problem}
-              onChange={(e) => setProblem(e.target.value)}
-              placeholder=""
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="예: SQL 튜닝으로 조회 성능 개선"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              회사명
+            </label>
+            <input
+              type="text"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="예: 다온플레이스"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            />
+          </div>
+        </div>
+
+        {/* 대표 프로젝트 체크 */}
+        <div className="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+          <input
+            type="checkbox"
+            id="isRepresentative"
+            checked={isRepresentative}
+            onChange={(e) => setIsRepresentative(e.target.checked)}
+            className="w-5 h-5 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500"
+          />
+          <label htmlFor="isRepresentative" className="flex-1">
+            <span className="font-medium text-gray-900 dark:text-white">⭐ 대표 프로젝트로 지정</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400">이력서에 증거 자료로 사용할 핵심 프로젝트</p>
+          </label>
+        </div>
+
+        {/* STAR 형식 입력 */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">📝 STAR 형식 (문제 → 행동 → 결과)</h3>
+
+          <div>
+            <label className="block text-sm font-medium text-orange-600 dark:text-orange-400 mb-1">
+              문제/상황 (Situation)
+            </label>
+            <textarea
+              value={problem}
+              onChange={(e) => setProblem(e.target.value)}
+              placeholder="어떤 문제/니즈가 있었나?"
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
-              내가 한 일: (구체적으로 뭘 했나?)
+              내가 한 일 (Action)
             </label>
-            <input
-              type="text"
+            <textarea
               value={action}
               onChange={(e) => setAction(e.target.value)}
-              placeholder=""
+              placeholder="구체적으로 뭘 했나? (기술적 접근 방식)"
+              rows={2}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-purple-600 dark:text-purple-400 mb-1">
-              기술: (사용한 기술 스택)
+              기술 스택 (Tech)
             </label>
             <input
               type="text"
               value={tech}
               onChange={(e) => setTech(e.target.value)}
-              placeholder=""
+              placeholder="예: Oracle SQL, PHP, JavaScript"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-green-600 dark:text-green-400 mb-1">
-              결과: (어떤 성과/결과가 있었나?)
-            </label>
-            <input
-              type="text"
-              value={result}
-              onChange={(e) => setResult(e.target.value)}
-              placeholder=""
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-green-600 dark:text-green-400 mb-1">
+                결과 (Result)
+              </label>
+              <textarea
+                value={result}
+                onChange={(e) => setResult(e.target.value)}
+                placeholder="어떤 성과/결과가 있었나?"
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                  bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
+                📊 정량적 성과 (중요!)
+              </label>
+              <input
+                type="text"
+                value={metrics}
+                onChange={(e) => setMetrics(e.target.value)}
+                placeholder="예: 응답시간 75% 개선, 오류 70% 감소"
+                className="w-full px-3 py-2 border border-emerald-300 dark:border-emerald-600 rounded-lg
+                  bg-emerald-50 dark:bg-emerald-900/20 text-gray-900 dark:text-white"
+              />
+            </div>
           </div>
+        </div>
 
+        {/* 증거 자료 (대표 프로젝트용) */}
+        {isRepresentative && (
+          <div className="space-y-3 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">📎 증거 자료 (대표 프로젝트)</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-pink-600 dark:text-pink-400 mb-1">
+                  🖼️ 스크린샷 URL
+                </label>
+                <input
+                  type="url"
+                  value={screenshots}
+                  onChange={(e) => setScreenshots(e.target.value)}
+                  placeholder="익명화된 화면 캡처 URL"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-1">
+                  📊 흐름도 URL
+                </label>
+                <input
+                  type="url"
+                  value={flowDiagram}
+                  onChange={(e) => setFlowDiagram(e.target.value)}
+                  placeholder="기능 흐름도/아키텍처 다이어그램"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-cyan-600 dark:text-cyan-400 mb-1">
+                  📄 문서 URL
+                </label>
+                <input
+                  type="url"
+                  value={documentation}
+                  onChange={(e) => setDocumentation(e.target.value)}
+                  placeholder="상세 설명 문서 (Notion/GitHub)"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-1">
+                  🎬 데모영상 URL
+                </label>
+                <input
+                  type="url"
+                  value={demoVideo}
+                  onChange={(e) => setDemoVideo(e.target.value)}
+                  placeholder="30초 데모 영상/GIF"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                    bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                🔗 프로젝트 링크
+              </label>
+              <input
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="GitHub 저장소 또는 배포 URL"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                  bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 일반 프로젝트용 링크 */}
+        {!isRepresentative && (
           <div>
-            <label className="block text-sm font-medium text-cyan-600 dark:text-cyan-400 mb-1">
-              링크: (프로젝트 URL)
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+              🔗 프로젝트 링크 (선택)
             </label>
             <input
               type="url"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              placeholder=""
+              placeholder="GitHub 저장소 또는 배포 URL"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-pink-600 dark:text-pink-400 mb-1">
-              스크린샷: (데모 스크린샷 URL)
-            </label>
-            <input
-              type="url"
-              value={screenshots}
-              onChange={(e) => setScreenshots(e.target.value)}
-              placeholder=""
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-1">
-              데모영상: (30초 영상/GIF URL)
-            </label>
-            <input
-              type="url"
-              value={demoVideo}
-              onChange={(e) => setDemoVideo(e.target.value)}
-              placeholder=""
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            />
-          </div>
-        </div>
+        )}
 
         {/* 저장 버튼 */}
         <div className="flex gap-2">
