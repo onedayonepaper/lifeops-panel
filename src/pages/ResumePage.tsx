@@ -43,8 +43,8 @@ const initialFormData: ResumeData = {
     phone: '010-5711-7309',
     email: 'eoduf1292@naver.com',
     address: '',
-    blog: 'https://onedayonepaper.tistory.com',
-    github: '',
+    blog: 'https://github.com/onedayonepaper/til',
+    github: 'https://github.com/onedayonepaper',
     portfolio: ''
   },
   education: [
