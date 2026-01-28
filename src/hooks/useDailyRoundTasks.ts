@@ -35,14 +35,8 @@ export interface Round {
   isSuccess?: boolean
 }
 
-const STORAGE_KEY = 'daily-round-card'
-
 function getTodayKey(): string {
   return new Date().toISOString().split('T')[0]
-}
-
-function getStorageKey(): string {
-  return `${STORAGE_KEY}-${getTodayKey()}`
 }
 
 function getDefaultRounds(): Round[] {
@@ -51,11 +45,9 @@ function getDefaultRounds(): Round[] {
       id: 'round-0',
       title: '워밍업',
       emoji: '🌅',
-      description: '5분',
+      description: '1분',
       items: [
         { id: 'r0-1', label: '물 1컵', checked: false },
-        { id: 'r0-2', label: '세수/양치', checked: false },
-        { id: 'r0-3', label: '노트북/노트 펼치기', checked: false },
       ]
     },
     {
@@ -65,48 +57,35 @@ function getDefaultRounds(): Round[] {
       description: '여기까지만 해도 오늘 성공!',
       isSuccess: true,
       items: [
-        { id: 'r1-1', label: '취업 15분', detail: '프로젝트 1개 4줄 (문제/한 일/기술/결과)', checked: false, actionUrl: '/apply', actionLabel: '지원관리' },
-        { id: 'r1-2', label: '일본어 10분', detail: '히라가나 10개 읽고 1번 쓰기', checked: false, actionUrl: 'https://www.duolingo.com', actionLabel: 'Duolingo' },
-        { id: 'r1-3', label: '포폴 15분', detail: 'README 2줄 추가하고 저장', checked: false, actionUrl: 'https://github.com/onedayonepaper', actionLabel: '내 GitHub' },
+        { id: 'r1-1', label: '(취업) 개발자 취업하기', detail: '공고 1개 찾기 → 링크 저장 + 요구사항 3줄', checked: false, actionUrl: '/apply', actionLabel: '지원관리' },
+        { id: 'r1-2', label: '(일본어) JLPT N2 자격증 취득', detail: '히라가나 10개 읽고 1번 쓰기', checked: false, actionUrl: '/japanese/hiragana', actionLabel: '히라가나' },
+        { id: 'r1-3', label: '(포폴) 실제 운영서비스 프로젝트', detail: '프로젝트 1개 4줄 (문제/한 일/기술/결과)', checked: false, actionUrl: '/portfolio', actionLabel: '포폴관리' },
       ]
     },
     {
       id: 'round-2',
-      title: '욕심 충족 확장',
+      title: '선택 블록 (60~90분)',
       emoji: '🔥',
-      description: '선택사항',
+      description: '아래 중 1개만 하면 성공!',
       items: [
-        { id: 'r2-1', label: '취업 확장', detail: '"내가 한 일" 3개로 다듬기 + 숫자 붙이기', checked: false, actionUrl: '/apply', actionLabel: '지원관리' },
-        { id: 'r2-2', label: '일본어 확장', detail: '히라가나 10개 추가 (총 20개)', checked: false, actionUrl: 'https://www.duolingo.com', actionLabel: 'Duolingo' },
-        { id: 'r2-3', label: '포폴 확장', detail: '커밋 1번 또는 스크린샷 1장', checked: false, actionUrl: 'https://github.com/onedayonepaper', actionLabel: '내 GitHub' },
+        { id: 'r2-1', label: 'A) 지원/제출 블록', detail: '이력서에 키워드 3개 반영 + 지원동기 5문장 + 제출(또는 직전 저장)', checked: false, actionUrl: '/apply', actionLabel: '지원관리' },
+        { id: 'r2-2', label: 'B) JLPT N2 점수 블록', detail: '독해 1세트 + 오답 체크 + 맞은 개수/틀린 유형 3개 기록', checked: false, actionUrl: '/japanese', actionLabel: '일본어학습' },
+        { id: 'r2-3', label: 'C) 면접/코테 대비 블록', detail: '알고리즘 1문제 + 풀이 설명 5줄 → 깃헙/노션에 정리', checked: false },
+        { id: 'r2-4', label: 'D) 토익스피킹 블록', detail: '모의테스트 1세트 or 파트별 연습 3문제', checked: false },
       ]
     },
   ]
 }
 
 export function useDailyRoundTasks() {
-  const { accessToken, isSignedIn } = useGoogleAuth()
-  const [rounds, setRounds] = useState<Round[]>(() => {
-    const saved = localStorage.getItem(getStorageKey())
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch {
-        return getDefaultRounds()
-      }
-    }
-    return getDefaultRounds()
-  })
+  const { accessToken, isSignedIn, signIn } = useGoogleAuth()
+  const [rounds, setRounds] = useState<Round[]>(getDefaultRounds())
   const [taskListId, setTaskListId] = useState<string | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [lastSynced, setLastSynced] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  // localStorage에 저장
-  const saveToLocal = useCallback((newRounds: Round[]) => {
-    localStorage.setItem(getStorageKey(), JSON.stringify(newRounds))
-    setRounds(newRounds)
-  }, [])
+  const [togglingItemId, setTogglingItemId] = useState<string | null>(null)
 
   // Task List 찾기 또는 생성
   const getOrCreateTaskList = useCallback(async (): Promise<string | null> => {
@@ -247,7 +226,7 @@ export function useDailyRoundTasks() {
       const existingTasks = await fetchTodayTasks(listId)
 
       if (existingTasks.length > 0) {
-        // 기존 태스크 상태 동기화
+        // Google Tasks에서 상태 가져오기
         const updatedRounds = rounds.map(round => ({
           ...round,
           items: round.items.map(item => {
@@ -264,7 +243,7 @@ export function useDailyRoundTasks() {
             return item
           })
         }))
-        saveToLocal(updatedRounds)
+        setRounds(updatedRounds)
       } else {
         // 새 태스크 생성
         const updatedRounds: Round[] = []
@@ -276,7 +255,7 @@ export function useDailyRoundTasks() {
           }
           updatedRounds.push({ ...round, items: updatedItems })
         }
-        saveToLocal(updatedRounds)
+        setRounds(updatedRounds)
       }
 
       setLastSynced(new Date())
@@ -286,89 +265,116 @@ export function useDailyRoundTasks() {
     }
 
     setIsSyncing(false)
-  }, [accessToken, isSignedIn, rounds, getOrCreateTaskList, fetchTodayTasks, createTask, saveToLocal])
+    setIsLoading(false)
+  }, [accessToken, isSignedIn, rounds, getOrCreateTaskList, fetchTodayTasks, createTask, updateTaskStatus])
 
   // 항목 토글
   const toggleItem = useCallback(async (roundId: string, itemId: string) => {
+    if (!isSignedIn || !taskListId) {
+      setError('로그인이 필요합니다')
+      return
+    }
+
+    // 이미 토글 중인 항목이 있으면 무시
+    if (togglingItemId) return
+
     const round = rounds.find(r => r.id === roundId)
     const item = round?.items.find(i => i.id === itemId)
     if (!item) return
 
     const newChecked = !item.checked
+    setTogglingItemId(itemId)
 
-    // 로컬 상태 먼저 업데이트
-    const updatedRounds = rounds.map(r => {
-      if (r.id !== roundId) return r
-      return {
-        ...r,
-        items: r.items.map(i => {
-          if (i.id !== itemId) return i
-          return { ...i, checked: newChecked }
-        })
+    try {
+      // Google Tasks 먼저 업데이트
+      if (item.taskId) {
+        const success = await updateTaskStatus(taskListId, item.taskId, newChecked)
+        if (!success) {
+          setError('태스크 업데이트 실패')
+          setTogglingItemId(null)
+          return
+        }
       }
-    })
-    saveToLocal(updatedRounds)
 
-    // Google Tasks 동기화
-    if (taskListId && item.taskId && accessToken) {
-      await updateTaskStatus(taskListId, item.taskId, newChecked)
+      // 상태 업데이트
+      const updatedRounds = rounds.map(r => {
+        if (r.id !== roundId) return r
+        return {
+          ...r,
+          items: r.items.map(i => {
+            if (i.id !== itemId) return i
+            return { ...i, checked: newChecked }
+          })
+        }
+      })
+      setRounds(updatedRounds)
+
+      // 커스텀 이벤트 발생 (다른 컴포넌트 동기화용)
+      window.dispatchEvent(new CustomEvent('roundTaskUpdated', { detail: { itemId, checked: newChecked } }))
+    } finally {
+      setTogglingItemId(null)
     }
-  }, [rounds, taskListId, accessToken, updateTaskStatus, saveToLocal])
+  }, [rounds, taskListId, isSignedIn, togglingItemId, updateTaskStatus])
 
   // 초기화
   const resetToday = useCallback(async () => {
+    if (!isSignedIn || !taskListId || !accessToken) {
+      setError('로그인이 필요합니다')
+      return
+    }
+
     if (!confirm('오늘 체크리스트를 초기화할까요?')) return
 
     const defaultRounds = getDefaultRounds()
+    setIsSyncing(true)
 
-    if (taskListId && accessToken) {
-      setIsSyncing(true)
-
-      // 기존 태스크 삭제
-      const existingTasks = await fetchTodayTasks(taskListId)
-      for (const task of existingTasks) {
-        try {
-          await fetch(`${TASKS_API}/lists/${taskListId}/tasks/${task.id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${accessToken}` }
-          })
-        } catch {
-          // 무시
-        }
+    // 기존 태스크 삭제
+    const existingTasks = await fetchTodayTasks(taskListId)
+    for (const task of existingTasks) {
+      try {
+        await fetch(`${TASKS_API}/lists/${taskListId}/tasks/${task.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+      } catch {
+        // 무시
       }
-
-      // 새 태스크 생성
-      const newRounds: Round[] = []
-      for (const round of defaultRounds) {
-        const updatedItems: RoundItem[] = []
-        for (const item of round.items) {
-          const taskId = await createTask(taskListId, item, round.title)
-          updatedItems.push({ ...item, taskId: taskId || undefined })
-        }
-        newRounds.push({ ...round, items: updatedItems })
-      }
-      saveToLocal(newRounds)
-      setIsSyncing(false)
-    } else {
-      saveToLocal(defaultRounds)
     }
-  }, [taskListId, accessToken, fetchTodayTasks, createTask, saveToLocal])
+
+    // 새 태스크 생성
+    const newRounds: Round[] = []
+    for (const round of defaultRounds) {
+      const updatedItems: RoundItem[] = []
+      for (const item of round.items) {
+        const taskId = await createTask(taskListId, item, round.title)
+        updatedItems.push({ ...item, taskId: taskId || undefined })
+      }
+      newRounds.push({ ...round, items: updatedItems })
+    }
+    setRounds(newRounds)
+    setIsSyncing(false)
+  }, [taskListId, accessToken, isSignedIn, fetchTodayTasks, createTask])
 
   // 로그인 시 동기화
   useEffect(() => {
     if (isSignedIn && accessToken && !taskListId) {
       syncWithGoogle()
+    } else if (!isSignedIn) {
+      setIsLoading(false)
     }
   }, [isSignedIn, accessToken, taskListId, syncWithGoogle])
 
   return {
     rounds,
     isSyncing,
+    isLoading,
     lastSynced,
     error,
     isSignedIn,
+    signIn,
     toggleItem,
     resetToday,
-    syncWithGoogle
+    syncWithGoogle,
+    togglingItemId
   }
 }

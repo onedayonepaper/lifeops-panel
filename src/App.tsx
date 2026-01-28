@@ -16,8 +16,14 @@ import { StudyJournalPage } from './pages/StudyJournalPage'
 import { GSEPage } from './pages/GSEPage'
 import { SpecPage } from './pages/SpecPage'
 import { ApplyPage } from './pages/ApplyPage'
+import { CompanyPage } from './pages/CompanyPage'
 import { LifeAnchorsPage } from './pages/LifeAnchorsPage'
 import { ClockPage } from './pages/ClockPage'
+import JapanesePage from './pages/JapanesePage'
+import HiraganaPracticePage from './pages/HiraganaPracticePage'
+import PortfolioPage from './pages/PortfolioPage'
+import ResumePage from './pages/ResumePage'
+import ResumeDetailPage from './pages/ResumeDetailPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
@@ -99,6 +105,12 @@ function App() {
         <Route path="/goals" element={<GSEPage />} />
         <Route path="/spec" element={<SpecPage />} />
         <Route path="/apply" element={<ApplyPage />} />
+        <Route path="/company" element={<CompanyPage />} />
+        <Route path="/japanese" element={<JapanesePage />} />
+        <Route path="/japanese/hiragana" element={<HiraganaPracticePage />} />
+        <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/resume" element={<ResumePage />} />
+        <Route path="/resume/:id" element={<ResumeDetailPage />} />
         <Route path="/life-anchors" element={<LifeAnchorsPage />} />
         <Route path="/clock" element={<ClockPage />} />
       </Routes>
