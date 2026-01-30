@@ -56,8 +56,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
   )
   const [tokenClient, setTokenClient] = useState<any>(null)
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const hasLoggedInBefore = localStorage.getItem('google_calendar_has_logged_in') === 'true'
+  const isRefreshingRef = useRef<boolean>(false)
 
   // Clear refresh timer
   const clearRefreshTimer = useCallback(() => {
@@ -67,22 +66,19 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Schedule token refresh
-  const scheduleTokenRefresh = useCallback((expiresIn: number, client: any) => {
+  // Schedule token refresh (silent only, no popup)
+  const scheduleTokenRefresh = useCallback((expiresIn: number, _client: any) => {
     clearRefreshTimer()
 
-    // Calculate when to refresh (5 minutes before expiry)
+    // Calculate when to check (5 minutes before expiry)
     const refreshTime = Math.max((expiresIn * 1000) - TOKEN_REFRESH_MARGIN, 60000) // At least 1 minute
 
-    console.log(`[Auth] Token refresh scheduled in ${Math.round(refreshTime / 60000)} minutes`)
+    console.log(`[Auth] Token check scheduled in ${Math.round(refreshTime / 60000)} minutes`)
 
-    refreshTimerRef.current = setTimeout(() => {
-      console.log('[Auth] Refreshing token...')
-      try {
-        client.requestAccessToken({ prompt: '' })
-      } catch (error) {
-        console.error('[Auth] Silent refresh failed:', error)
-      }
+    refreshTimerRef.current = setTimeout(async () => {
+      // Just log that token is expiring - don't auto-popup
+      // User will be prompted to sign in again when they try to use a feature
+      console.log('[Auth] Token expiring soon. User may need to sign in again.')
     }, refreshTime)
   }, [clearRefreshTimer])
 
@@ -112,6 +108,8 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
           client_id: GOOGLE_CLIENT_ID,
           scope: SCOPES,
           callback: (response: any) => {
+            isRefreshingRef.current = false
+
             if (response.access_token) {
               localStorage.setItem('google_calendar_token', response.access_token)
               localStorage.setItem('google_calendar_has_logged_in', 'true')
@@ -149,44 +147,15 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
             if (timeUntilExpiry > TOKEN_REFRESH_MARGIN) {
               // Token still valid, schedule refresh
               scheduleTokenRefresh(Math.floor(timeUntilExpiry / 1000), client)
-            } else {
-              // Token expired or expiring soon, refresh now
-              console.log('[Auth] Token expiring soon, refreshing...')
-              try {
-                client.requestAccessToken({ prompt: '' })
-              } catch {
-                setIsLoading(false)
-              }
             }
+            // Don't auto-refresh with popup - let user manually re-login when needed
           } else {
-            // Token invalid, try silent refresh
+            // Token invalid - clear it but don't popup
             localStorage.removeItem('google_calendar_token')
             localStorage.removeItem('google_calendar_token_expiry')
             setAccessToken(null)
-
-            if (hasLoggedInBefore) {
-              console.log('[Auth] Token invalid, attempting silent refresh...')
-              try {
-                client.requestAccessToken({ prompt: '' })
-              } catch {
-                setIsLoading(false)
-              }
-            } else {
-              setIsLoading(false)
-            }
-          }
-        } else if (hasLoggedInBefore) {
-          // No token but has logged in before, try silent refresh
-          console.log('[Auth] No token, attempting silent refresh...')
-          const silentRefreshTimeout = setTimeout(() => {
             setIsLoading(false)
-          }, 3000)
-
-          try {
-            client.requestAccessToken({ prompt: '' })
-          } catch {
-            clearTimeout(silentRefreshTimeout)
-            setIsLoading(false)
+            // User will need to manually sign in again
           }
         } else {
           setIsLoading(false)
@@ -202,20 +171,23 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Also refresh token when window gains focus (user returns to tab)
+  // Check token validity when window gains focus (but don't popup)
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isSignedIn && tokenClient) {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && isSignedIn && accessToken) {
         const expiryTime = parseInt(localStorage.getItem('google_calendar_token_expiry') || '0')
         const timeUntilExpiry = expiryTime - Date.now()
 
-        // If token expires in less than 10 minutes, refresh it
-        if (timeUntilExpiry < 10 * 60 * 1000) {
-          console.log('[Auth] Tab visible, token expiring soon, refreshing...')
-          try {
-            tokenClient.requestAccessToken({ prompt: '' })
-          } catch (error) {
-            console.error('[Auth] Visibility refresh failed:', error)
+        // If token expired, verify it's still valid
+        if (timeUntilExpiry <= 0) {
+          const isValid = await verifyToken(accessToken)
+          if (!isValid) {
+            // Token expired - clear state, user will need to sign in manually
+            console.log('[Auth] Token expired, please sign in again')
+            localStorage.removeItem('google_calendar_token')
+            localStorage.removeItem('google_calendar_token_expiry')
+            setAccessToken(null)
+            setIsSignedIn(false)
           }
         }
       }
@@ -225,7 +197,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [isSignedIn, tokenClient])
+  }, [isSignedIn, accessToken, verifyToken])
 
   const signIn = useCallback(() => {
     if (tokenClient) {

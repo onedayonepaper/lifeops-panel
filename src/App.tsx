@@ -7,23 +7,31 @@ import { requestNotificationPermission } from './utils/notifications'
 import { TopBar } from './components/TopBar'
 import { SettingsModal } from './components/SettingsModal'
 import { Sidebar } from './components/Sidebar'
-import { DailyRoundCard } from './components/DailyRoundCard'
+import { DailyRoutineCard } from './components/DailyRoutineCard'
 import { DashboardPage } from './pages/DashboardPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { TasksPage } from './pages/TasksPage'
 import { BucketListPage } from './pages/BucketListPage'
 import { StudyJournalPage } from './pages/StudyJournalPage'
-import { GSEPage } from './pages/GSEPage'
-import { SpecPage } from './pages/SpecPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { CompanyPage } from './pages/CompanyPage'
+import EmploymentPage from './pages/EmploymentPage'
 import { LifeAnchorsPage } from './pages/LifeAnchorsPage'
 import { ClockPage } from './pages/ClockPage'
 import JapanesePage from './pages/JapanesePage'
 import HiraganaPracticePage from './pages/HiraganaPracticePage'
 import PortfolioPage from './pages/PortfolioPage'
+import ProjectInputPage from './pages/ProjectInputPage'
 import ResumePage from './pages/ResumePage'
 import ResumeDetailPage from './pages/ResumeDetailPage'
+import ResumeEditPage from './pages/ResumeEditPage'
+import CareerDetailPage from './pages/CareerDetailPage'
+import CareerEditPage from './pages/CareerEditPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
+import ProjectEditPage from './pages/ProjectEditPage'
+import ProfilePage from './pages/ProfilePage'
+import PublicSectorITPage from './pages/PublicSectorITPage'
+import JobDocumentsPage from './pages/JobDocumentsPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
@@ -85,9 +93,9 @@ function HomePage() {
   }, [])
 
   return (
-    <div>
-      {/* 오늘 카드 - 메인 페이지에서는 이것만 보여줌 */}
-      <DailyRoundCard />
+    <div className="space-y-4">
+      {/* 오늘 카드 */}
+      <DailyRoutineCard />
     </div>
   )
 }
@@ -96,21 +104,32 @@ function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/today" element={<HomePage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/bucket-list" element={<BucketListPage />} />
         <Route path="/study-journal" element={<StudyJournalPage />} />
-        <Route path="/goals" element={<GSEPage />} />
-        <Route path="/spec" element={<SpecPage />} />
+        <Route path="/employment" element={<EmploymentPage />} />
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/company" element={<CompanyPage />} />
         <Route path="/japanese" element={<JapanesePage />} />
         <Route path="/japanese/hiragana" element={<HiraganaPracticePage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/portfolio/new" element={<ProjectInputPage />} />
         <Route path="/resume" element={<ResumePage />} />
+        <Route path="/resume/edit/new" element={<ResumeEditPage />} />
         <Route path="/resume/:id" element={<ResumeDetailPage />} />
+        <Route path="/resume/:id/edit" element={<ResumeEditPage />} />
+        <Route path="/career/edit/new" element={<CareerEditPage />} />
+        <Route path="/career/:id" element={<CareerDetailPage />} />
+        <Route path="/career/:id/edit" element={<CareerEditPage />} />
+        <Route path="/project/edit/new" element={<ProjectEditPage />} />
+        <Route path="/project/:id" element={<ProjectDetailPage />} />
+        <Route path="/project/:id/edit" element={<ProjectEditPage />} />
+        <Route path="/public-sector-it" element={<PublicSectorITPage />} />
+        <Route path="/job-documents" element={<JobDocumentsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/life-anchors" element={<LifeAnchorsPage />} />
         <Route path="/clock" element={<ClockPage />} />
       </Routes>

@@ -26,12 +26,14 @@ function EventItem({
   onToggleComplete,
   onEdit,
   onDelete,
+  onPostpone,
   isSelectedToday
 }: {
   event: CalendarEvent
   onToggleComplete: (eventId: string, title: string) => void
   onEdit: (event: CalendarEvent) => void
   onDelete: (eventId: string) => void
+  onPostpone: (event: CalendarEvent) => void
   isSelectedToday: boolean
 }) {
   const [showMenu, setShowMenu] = useState(false)
@@ -99,6 +101,18 @@ function EventItem({
               onClick={() => setShowMenu(false)}
             />
             <div className="absolute right-0 top-full mt-1 bg-gray-700 rounded-lg shadow-lg z-50 py-1 min-w-[100px]">
+              <button
+                onClick={() => {
+                  onPostpone(event)
+                  setShowMenu(false)
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-orange-400 hover:bg-gray-600 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                내일로 미루기
+              </button>
               <button
                 onClick={() => {
                   onEdit(event)
@@ -427,6 +441,28 @@ export function CalendarCard() {
     await addEvent({ title, date: dateStr, isAllDay: true })
   }
 
+  // 내일로 미루기 핸들러
+  const handlePostpone = async (event: CalendarEvent) => {
+    const tomorrow = addDays(event.start, 1)
+    const tomorrowDate = format(tomorrow, 'yyyy-MM-dd')
+
+    const updateData: UpdateEventData = {
+      date: tomorrowDate,
+      isAllDay: event.isAllDay
+    }
+
+    if (!event.isAllDay) {
+      updateData.startTime = format(event.start, 'HH:mm')
+      updateData.endTime = format(event.end, 'HH:mm')
+    }
+
+    const success = await updateEvent(event.id, updateData)
+    if (success) {
+      // 성공 시 다음 날로 이동
+      setSelectedDate(tomorrow)
+    }
+  }
+
   const goToPrevDay = () => setSelectedDate(prev => subDays(prev, 1))
   const goToNextDay = () => setSelectedDate(prev => addDays(prev, 1))
   const goToToday = () => setSelectedDate(new Date())
@@ -580,75 +616,6 @@ export function CalendarCard() {
           </div>
         </div>
 
-        {/* Current Routine - only show on today */}
-        {isToday(selectedDate) && (() => {
-          const now = new Date()
-          const currentEvent = selectedDateEvents.find(e =>
-            !e.isAllDay && e.start <= now && e.end >= now
-          )
-          const nextEvent = selectedDateEvents.find(e =>
-            !e.isAllDay && e.start > now
-          )
-
-          if (currentEvent) {
-            const startMinutes = currentEvent.start.getHours() * 60 + currentEvent.start.getMinutes()
-            const endMinutes = currentEvent.end.getHours() * 60 + currentEvent.end.getMinutes()
-            const currentMinutes = now.getHours() * 60 + now.getMinutes()
-            const totalDuration = endMinutes - startMinutes
-            const elapsed = currentMinutes - startMinutes
-            const progress = Math.round((elapsed / totalDuration) * 100)
-            const remainingMinutes = endMinutes - currentMinutes
-            const displayTitle = currentEvent.title.replace('✅ ', '')
-
-            return (
-              <div className="mb-4 bg-gradient-to-br from-blue-600/30 to-blue-800/20 rounded-2xl p-4 sm:p-5 border border-blue-500/40 shadow-lg">
-                {/* Header with pulse indicator */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                  </span>
-                  <span className="text-sm font-semibold text-blue-300 uppercase tracking-wide">현재 진행 중</span>
-                </div>
-
-                {/* Main content */}
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xl sm:text-2xl font-bold text-white leading-tight mb-2">{displayTitle}</div>
-                    <div className="text-sm sm:text-base text-blue-300 font-mono">
-                      {format(currentEvent.start, 'HH:mm')} – {format(currentEvent.end, 'HH:mm')}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-4xl sm:text-5xl font-bold text-blue-400">{remainingMinutes}</div>
-                    <div className="text-sm text-blue-300/80">분 남음</div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-2.5 bg-gray-700/60 rounded-full overflow-hidden mb-3">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="text-xs text-blue-300/70 text-right mb-2">{progress}% 완료</div>
-
-                {/* Next event preview */}
-                {nextEvent && (
-                  <div className="flex items-center gap-2 text-sm text-gray-300 bg-gray-800/50 rounded-lg px-3 py-2">
-                    <span className="text-gray-500">다음:</span>
-                    <span className="flex-1 truncate font-medium">{nextEvent.title.replace('✅ ', '')}</span>
-                    <span className="bg-gray-700 px-2 py-0.5 rounded text-xs flex-shrink-0 text-blue-300">
-                      {Math.round((nextEvent.start.getTime() - now.getTime()) / 60000)}분 후
-                    </span>
-                  </div>
-                )}
-              </div>
-            )
-          }
-          return null
-        })()}
 
         {/* Date Navigation */}
         <div className="flex items-center justify-between mb-3 bg-gray-700/50 rounded-xl p-2 gap-1">
@@ -696,7 +663,7 @@ export function CalendarCard() {
             <p>{formatSelectedDate()} 일정이 없습니다</p>
           </div>
         ) : (
-          <div className="space-y-1 max-h-64 overflow-y-auto">
+          <div className="space-y-1 max-h-40 overflow-y-auto">
             {selectedDateEvents.map(event => (
               <EventItem
                 key={event.id}
@@ -704,6 +671,7 @@ export function CalendarCard() {
                 onToggleComplete={toggleEventComplete}
                 onEdit={setEditingEvent}
                 onDelete={deleteEvent}
+                onPostpone={handlePostpone}
                 isSelectedToday={isToday(selectedDate)}
               />
             ))}

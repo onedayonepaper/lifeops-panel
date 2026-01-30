@@ -13,11 +13,15 @@ type ApplicationStatus =
   | 'offer'       // 합격
   | 'rejected'    // 불합격
 
+type Country = 'kr' | 'jp' | 'gj'  // gj = 광주/전남
+
 interface Company {
   id: string
   name: string
   logo: string
   tier: 'tier1' | 'tier2' | 'tier3'
+  country: Country
+  field: string  // 분야
   position: string
   status: ApplicationStatus
   deadline?: string
@@ -40,189 +44,94 @@ const STATUS_CONFIG: Record<ApplicationStatus, { label: string; color: string; b
 }
 
 const INITIAL_COMPANIES: Company[] = [
+  // ===== 한국 회사 =====
   // Tier 1 - 최상위 IT 대기업
-  {
-    id: '1',
-    name: 'Naver',
-    logo: '🟢',
-    tier: 'tier1',
-    position: '프론트엔드 개발자',
-    status: 'target',
-    notes: '네이버 신입 공채, 연봉 5000만+',
-    salary: '5,000만+',
-    techStack: ['React', 'TypeScript', 'Node.js'],
-    url: 'https://recruit.navercorp.com',
-  },
-  {
-    id: '2',
-    name: 'Kakao',
-    logo: '💬',
-    tier: 'tier1',
-    position: '소프트웨어 엔지니어',
-    status: 'target',
-    notes: '카카오 상시 채용',
-    salary: '5,000만+',
-    techStack: ['Kotlin', 'Spring', 'React'],
-    url: 'https://careers.kakao.com',
-  },
-  {
-    id: '3',
-    name: 'Line',
-    logo: '💚',
-    tier: 'tier1',
-    position: '서버 개발자',
-    status: 'target',
-    notes: '라인 플러스 신입',
-    salary: '5,500만+',
-    techStack: ['Java', 'Kotlin', 'Spring Boot'],
-    url: 'https://careers.linecorp.com',
-  },
-  {
-    id: '4',
-    name: 'Coupang',
-    logo: '🚀',
-    tier: 'tier1',
-    position: 'Software Engineer',
-    status: 'target',
-    notes: '쿠팡 상시 채용, 영어 면접',
-    salary: '6,000만+',
-    techStack: ['Java', 'AWS', 'React'],
-    url: 'https://www.coupang.jobs',
-  },
-  {
-    id: '5',
-    name: 'Toss',
-    logo: '💙',
-    tier: 'tier1',
-    position: '프론트엔드 개발자',
-    status: 'target',
-    notes: '토스 NEXT 개발자 채용',
-    salary: '5,500만+',
-    techStack: ['React', 'TypeScript', 'Next.js'],
-    url: 'https://toss.im/career',
-  },
+  { id: '1', name: 'Naver', logo: '🟢', tier: 'tier1', country: 'kr', field: '플랫폼/검색', position: '프론트엔드 개발자', status: 'target', notes: '네이버 신입 공채', salary: '5,000만+', techStack: ['React', 'TypeScript'], url: 'https://recruit.navercorp.com' },
+  { id: '2', name: 'Kakao', logo: '💬', tier: 'tier1', country: 'kr', field: '플랫폼/메신저', position: '소프트웨어 엔지니어', status: 'target', notes: '카카오 상시 채용', salary: '5,000만+', techStack: ['Kotlin', 'Spring'], url: 'https://careers.kakao.com' },
+  { id: '3', name: 'Coupang', logo: '🚀', tier: 'tier1', country: 'kr', field: '이커머스', position: 'Software Engineer', status: 'target', notes: '영어 면접', salary: '6,000만+', techStack: ['Java', 'AWS'], url: 'https://www.coupang.jobs' },
+  { id: '4', name: 'Toss', logo: '💙', tier: 'tier1', country: 'kr', field: '핀테크', position: '프론트엔드 개발자', status: 'target', notes: '토스 NEXT', salary: '5,500만+', techStack: ['React', 'TypeScript'], url: 'https://toss.im/career' },
   // Tier 2 - 대기업/유니콘
-  {
-    id: '6',
-    name: '배달의민족',
-    logo: '🍔',
-    tier: 'tier2',
-    position: '백엔드 개발자',
-    status: 'target',
-    notes: '우아한형제들',
-    salary: '5,000만+',
-    techStack: ['Java', 'Kotlin', 'Spring'],
-    url: 'https://career.woowahan.com',
-  },
-  {
-    id: '7',
-    name: '당근',
-    logo: '🥕',
-    tier: 'tier2',
-    position: '소프트웨어 엔지니어',
-    status: 'target',
-    notes: '당근마켓 채용',
-    salary: '5,000만+',
-    techStack: ['Go', 'Kotlin', 'React Native'],
-    url: 'https://about.daangn.com/jobs',
-  },
-  {
-    id: '8',
-    name: '토스페이먼츠',
-    logo: '💳',
-    tier: 'tier2',
-    position: '결제 시스템 개발자',
-    status: 'target',
-    notes: 'PG사 최고 연봉',
-    salary: '5,500만+',
-    techStack: ['Java', 'Kotlin', 'Spring Boot'],
-    url: 'https://tosspayments-career.oopy.io',
-  },
-  {
-    id: '9',
-    name: '카카오뱅크',
-    logo: '🏦',
-    tier: 'tier2',
-    position: '풀스택 개발자',
-    status: 'target',
-    notes: '금융권 IT',
-    salary: '5,000만+',
-    techStack: ['Java', 'Spring', 'React'],
-    url: 'https://kakaobank.recruiter.co.kr',
-  },
-  {
-    id: '10',
-    name: '크래프톤',
-    logo: '🎮',
-    tier: 'tier2',
-    position: '게임 클라이언트 개발자',
-    status: 'target',
-    notes: '배틀그라운드',
-    salary: '5,500만+',
-    techStack: ['C++', 'Unreal Engine'],
-    url: 'https://careers.krafton.com',
-  },
+  { id: '5', name: '배달의민족', logo: '🍔', tier: 'tier2', country: 'kr', field: '배달/O2O', position: '백엔드 개발자', status: 'target', notes: '우아한형제들', salary: '5,000만+', techStack: ['Java', 'Kotlin'], url: 'https://career.woowahan.com' },
+  { id: '6', name: '당근', logo: '🥕', tier: 'tier2', country: 'kr', field: 'C2C/로컬', position: '소프트웨어 엔지니어', status: 'target', notes: '당근마켓', salary: '5,000만+', techStack: ['Go', 'Kotlin'], url: 'https://about.daangn.com/jobs' },
+  { id: '7', name: '토스페이먼츠', logo: '💳', tier: 'tier2', country: 'kr', field: 'PG/결제', position: '결제 시스템 개발자', status: 'target', notes: 'PG사 최고 연봉', salary: '5,500만+', techStack: ['Java', 'Spring Boot'], url: 'https://tosspayments-career.oopy.io' },
+  { id: '8', name: '카카오뱅크', logo: '🏦', tier: 'tier2', country: 'kr', field: '인터넷은행', position: '풀스택 개발자', status: 'target', notes: '금융권 IT', salary: '5,000만+', techStack: ['Java', 'React'], url: 'https://kakaobank.recruiter.co.kr' },
+  { id: '9', name: '크래프톤', logo: '🎮', tier: 'tier2', country: 'kr', field: '게임', position: '게임 클라이언트', status: 'target', notes: '배틀그라운드', salary: '5,500만+', techStack: ['C++', 'Unreal'], url: 'https://careers.krafton.com' },
   // Tier 3 - 성장 스타트업
-  {
-    id: '11',
-    name: '야놀자',
-    logo: '🏨',
-    tier: 'tier3',
-    position: '백엔드 개발자',
-    status: 'target',
-    notes: '여행/숙박 플랫폼',
-    salary: '4,500만+',
-    techStack: ['Java', 'Spring', 'AWS'],
-    url: 'https://careers.yanolja.co',
-  },
-  {
-    id: '12',
-    name: '무신사',
-    logo: '👕',
-    tier: 'tier3',
-    position: '프론트엔드 개발자',
-    status: 'target',
-    notes: '패션 커머스 1위',
-    salary: '4,500만+',
-    techStack: ['React', 'TypeScript', 'Next.js'],
-    url: 'https://career.musinsa.com',
-  },
-  {
-    id: '13',
-    name: '직방',
-    logo: '🏠',
-    tier: 'tier3',
-    position: '소프트웨어 엔지니어',
-    status: 'target',
-    notes: '부동산 프롭테크',
-    salary: '4,500만+',
-    techStack: ['TypeScript', 'React', 'Node.js'],
-    url: 'https://zigbang.recruiter.co.kr',
-  },
-  {
-    id: '14',
-    name: '리디',
-    logo: '📖',
-    tier: 'tier3',
-    position: '웹 개발자',
-    status: 'target',
-    notes: '전자책 플랫폼',
-    salary: '4,500만+',
-    techStack: ['React', 'TypeScript', 'Python'],
-    url: 'https://ridi.career.greetinghr.com',
-  },
-  {
-    id: '15',
-    name: '버킷플레이스',
-    logo: '🏡',
-    tier: 'tier3',
-    position: '프론트엔드 개발자',
-    status: 'target',
-    notes: '오늘의집',
-    salary: '4,500만+',
-    techStack: ['React', 'TypeScript', 'GraphQL'],
-    url: 'https://careers.bucketplace.net',
-  },
+  { id: '10', name: '야놀자', logo: '🏨', tier: 'tier3', country: 'kr', field: '여행/숙박', position: '백엔드 개발자', status: 'target', notes: '여행 플랫폼', salary: '4,500만+', techStack: ['Java', 'AWS'], url: 'https://careers.yanolja.co' },
+  { id: '11', name: '무신사', logo: '👕', tier: 'tier3', country: 'kr', field: '패션커머스', position: '프론트엔드 개발자', status: 'target', notes: '패션 1위', salary: '4,500만+', techStack: ['React', 'Next.js'], url: 'https://career.musinsa.com' },
+  { id: '12', name: '직방', logo: '🏠', tier: 'tier3', country: 'kr', field: '프롭테크', position: '소프트웨어 엔지니어', status: 'target', notes: '부동산', salary: '4,500만+', techStack: ['TypeScript', 'React'], url: 'https://zigbang.recruiter.co.kr' },
+  { id: '13', name: '리디', logo: '📖', tier: 'tier3', country: 'kr', field: '콘텐츠', position: '웹 개발자', status: 'target', notes: '전자책', salary: '4,500만+', techStack: ['React', 'Python'], url: 'https://ridi.career.greetinghr.com' },
+  { id: '14', name: '버킷플레이스', logo: '🏡', tier: 'tier3', country: 'kr', field: '인테리어', position: '프론트엔드 개발자', status: 'target', notes: '오늘의집', salary: '4,500만+', techStack: ['React', 'GraphQL'], url: 'https://careers.bucketplace.net' },
+
+  // ===== 일본 회사 =====
+  // Tier 1 - 대형 IT/플랫폼
+  { id: 'jp1', name: 'LY Corporation', logo: '💚', tier: 'tier1', country: 'jp', field: '플랫폼/인터넷', position: 'Software Engineer', status: 'target', notes: 'LINE Yahoo 합병', salary: '', techStack: ['Java', 'Kotlin'], url: 'https://www.lycorp.co.jp/en/recruit/' },
+  { id: 'jp2', name: 'Rakuten', logo: '🔴', tier: 'tier1', country: 'jp', field: '이커머스/핀테크', position: 'Software Engineer', status: 'target', notes: '라쿠텐, 영어 공용어', salary: '', techStack: ['Java', 'Spring'], url: 'https://global.rakuten.com/corp/careers/' },
+  { id: 'jp3', name: 'Mercari', logo: '📦', tier: 'tier1', country: 'jp', field: 'C2C/핀테크', position: 'Software Engineer', status: 'target', notes: '메루카리', salary: '', techStack: ['Go', 'Kubernetes'], url: 'https://careers.mercari.com/en/' },
+  { id: 'jp4', name: 'Sony', logo: '🎵', tier: 'tier1', country: 'jp', field: '전자/콘텐츠/AI', position: 'Software Engineer', status: 'target', notes: '소니', salary: '', techStack: ['Python', 'C++'], url: 'https://www.sony.com/en/SonyInfo/Careers/japan/' },
+  { id: 'jp5', name: 'Nintendo', logo: '🎮', tier: 'tier1', country: 'jp', field: '게임', position: 'Game Developer', status: 'target', notes: '닌텐도', salary: '', techStack: ['C++', 'C#'], url: 'https://www.nintendo.co.jp/jobs/index.html' },
+  { id: 'jp6', name: 'SoftBank', logo: '📱', tier: 'tier1', country: 'jp', field: '통신/AI/투자', position: 'Engineer', status: 'target', notes: '소프트뱅크', salary: '', techStack: ['Python', 'Cloud'], url: 'https://www.softbank.jp/recruit/' },
+  { id: 'jp7', name: 'NTT DATA', logo: '🌐', tier: 'tier1', country: 'jp', field: 'SI/컨설팅/클라우드', position: 'IT Consultant', status: 'target', notes: 'NTT 그룹', salary: '', techStack: ['Java', 'Cloud'], url: 'https://careers.services.global.ntt/global/en' },
+  // Tier 2 - 메이저 IT/게임
+  { id: 'jp8', name: 'CyberAgent', logo: '🎨', tier: 'tier2', country: 'jp', field: '인터넷/광고/게임', position: 'Web Engineer', status: 'target', notes: '사이버에이전트', salary: '', techStack: ['TypeScript', 'Go'], url: 'https://www.cyberagent.co.jp/careers/' },
+  { id: 'jp9', name: 'DeNA', logo: '🎯', tier: 'tier2', country: 'jp', field: '인터넷/게임/헬스', position: 'Software Engineer', status: 'target', notes: '디엔에이', salary: '', techStack: ['Go', 'Ruby'], url: 'https://dena.com/jp/recruit/' },
+  { id: 'jp10', name: 'KDDI', logo: '📡', tier: 'tier2', country: 'jp', field: '통신/플랫폼', position: 'Engineer', status: 'target', notes: 'au', salary: '', techStack: ['Java', 'Cloud'], url: 'https://www.kddi.com/english/corporate/recruit/' },
+  { id: 'jp11', name: 'Square Enix', logo: '⚔️', tier: 'tier2', country: 'jp', field: '게임', position: 'Game Engineer', status: 'target', notes: 'FF, 드퀘', salary: '', techStack: ['C++', 'Unreal'], url: 'https://www.jp.square-enix.com/recruit/' },
+  { id: 'jp12', name: 'Panasonic', logo: '🔋', tier: 'tier2', country: 'jp', field: '전자/제조/소프트', position: 'Software Engineer', status: 'target', notes: '파나소닉', salary: '', techStack: ['C', 'Python'], url: 'https://recruit.jpn.panasonic.com/' },
+  { id: 'jp13', name: 'Fujitsu', logo: '💻', tier: 'tier2', country: 'jp', field: 'IT/클라우드/SI', position: 'IT Engineer', status: 'target', notes: '후지쯔', salary: '', techStack: ['Java', 'Cloud'], url: 'https://fujitsu.recruiting.jp.fujitsu.com/career/' },
+  { id: 'jp14', name: 'NEC', logo: '🖥️', tier: 'tier2', country: 'jp', field: 'IT/네트워크/보안', position: 'System Engineer', status: 'target', notes: 'NEC', salary: '', techStack: ['Python', 'Security'], url: 'https://jpn.nec.com/recruit/index.html' },
+  { id: 'jp15', name: 'Hitachi', logo: '⚡', tier: 'tier2', country: 'jp', field: 'IT/인프라/제조', position: 'IT Engineer', status: 'target', notes: '히타치', salary: '', techStack: ['Java', 'IoT'], url: 'https://www.hitachi.co.jp/recruit/' },
+  { id: 'jp16', name: 'Canon', logo: '📷', tier: 'tier2', country: 'jp', field: '전자/이미징', position: 'Software Engineer', status: 'target', notes: '캐논', salary: '', techStack: ['C++', 'Embedded'], url: 'https://global.canon/ja/employ/career/' },
+  { id: 'jp17', name: 'Toyota', logo: '🚗', tier: 'tier2', country: 'jp', field: '모빌리티/소프트', position: 'Software Engineer', status: 'target', notes: '토요타, 자율주행', salary: '', techStack: ['C++', 'Python'], url: 'https://www.toyota-recruit.com/career/' },
+  { id: 'jp18', name: 'DENSO', logo: '🔧', tier: 'tier2', country: 'jp', field: '자동차SW/임베디드', position: 'Embedded Engineer', status: 'target', notes: '덴소', salary: '', techStack: ['C', 'Embedded'], url: 'https://www.denso.com/jp/ja/careers/' },
+  { id: 'jp19', name: 'Recruit Holdings', logo: '👔', tier: 'tier2', country: 'jp', field: 'HR테크/플랫폼', position: 'Product Engineer', status: 'target', notes: '리쿠르트', salary: '', techStack: ['Ruby', 'Go'], url: 'https://recruit-holdings.com/en/about/careers/' },
+  // Tier 3 - 성장 스타트업/SaaS
+  { id: 'jp20', name: 'ZOZO', logo: '👗', tier: 'tier3', country: 'jp', field: '이커머스/패션테크', position: 'Web Engineer', status: 'target', notes: 'ZOZOTOWN', salary: '', techStack: ['Java', 'TypeScript'], url: 'https://corp.zozo.com/recruit/' },
+  { id: 'jp21', name: 'SmartNews', logo: '📰', tier: 'tier3', country: 'jp', field: '뉴스/미디어', position: 'Software Engineer', status: 'target', notes: '스마트뉴스', salary: '', techStack: ['Go', 'Python'], url: 'https://careers.smartnews.com/en/' },
+  { id: 'jp22', name: 'Preferred Networks', logo: '🤖', tier: 'tier1', country: 'jp', field: 'AI/딥러닝', position: 'ML Engineer', status: 'target', notes: 'AI 스타트업 최고', salary: '', techStack: ['Python', 'C++'], url: 'https://www.preferred.jp/en/careers' },
+  { id: 'jp23', name: 'Sansan', logo: '📇', tier: 'tier3', country: 'jp', field: 'B2B SaaS', position: 'Software Engineer', status: 'target', notes: '명함관리', salary: '', techStack: ['Kotlin', 'AWS'], url: 'https://jp.corp-sansan.com/recruit/' },
+  { id: 'jp24', name: 'freee', logo: '📊', tier: 'tier3', country: 'jp', field: '핀테크/SaaS', position: 'Software Engineer', status: 'target', notes: '회계SaaS', salary: '', techStack: ['Ruby', 'Go'], url: 'https://jobs.freee.co.jp/entry/career/' },
+  { id: 'jp25', name: 'Money Forward', logo: '💰', tier: 'tier3', country: 'jp', field: '핀테크/SaaS', position: 'Software Engineer', status: 'target', notes: '자산관리', salary: '', techStack: ['Ruby', 'Go'], url: 'https://recruit.moneyforward.com/' },
+  { id: 'jp26', name: 'Cookpad', logo: '🍳', tier: 'tier3', country: 'jp', field: '푸드테크', position: 'Software Engineer', status: 'target', notes: '요리 레시피', salary: '', techStack: ['Ruby', 'Go'], url: 'https://cookpad.careers/' },
+  { id: 'jp27', name: 'GMO Internet', logo: '🌍', tier: 'tier2', country: 'jp', field: '인터넷/핀테크', position: 'Engineer', status: 'target', notes: 'GMO', salary: '', techStack: ['PHP', 'Go'], url: 'https://internet.gmo/recruit/' },
+  { id: 'jp28', name: 'GREE Holdings', logo: '🎲', tier: 'tier3', country: 'jp', field: '게임/엔터/테크', position: 'Game Engineer', status: 'target', notes: '그리', salary: '', techStack: ['Unity', 'PHP'], url: 'https://hd.gree.net/jp/ja/recruit/' },
+  { id: 'jp29', name: 'MIXI Group', logo: '🎪', tier: 'tier3', country: 'jp', field: '엔터/플랫폼', position: 'Software Engineer', status: 'target', notes: '믹시, 몬스트', salary: '', techStack: ['Go', 'Kotlin'], url: 'https://mixigroup-recruit.mixi.co.jp/' },
+  { id: 'jp30', name: 'PKSHA Technology', logo: '🧠', tier: 'tier3', country: 'jp', field: 'AI/엔터프라이즈', position: 'ML Engineer', status: 'target', notes: 'AI 솔루션', salary: '', techStack: ['Python', 'TensorFlow'], url: 'https://www.pkshatech.com/recruitment/' },
+
+  // ===== 광주/전남 지역 =====
+  // Tier 1 - 대기업/공기업
+  { id: 'gj1', name: '한국전력공사', logo: '⚡', tier: 'tier1', country: 'gj', field: '에너지/공기업', position: '전력망 ICT 운영', status: 'target', notes: '전남 나주, 정보처리기사', salary: '', techStack: ['전산학', '정보처리기사'], url: 'https://recruit.kepco.co.kr' },
+  { id: 'gj2', name: '삼성전자 광주사업장', logo: '📱', tier: 'tier1', country: 'gj', field: '가전/IoT', position: '제조 라인 전산 제어', status: 'target', notes: '광주 광산', salary: '', techStack: ['Embedded SW', '생산 전산'], url: 'https://www.samsung.com/sec/careers' },
+  { id: 'gj3', name: 'POSCO DX', logo: '🏭', tier: 'tier1', country: 'gj', field: '스마트팩토리/AI', position: '스마트 팩토리 개발', status: 'target', notes: '전남 광양', salary: '', techStack: ['DCS 제어', '클라우드'], url: 'https://www.poscodx.co.kr/recruit' },
+  { id: 'gj4', name: 'LG화학', logo: '🧪', tier: 'tier1', country: 'gj', field: '화학/디지털트윈', position: '제조 공정 데이터 분석', status: 'target', notes: '전남 여수', salary: '', techStack: ['Python', '스마트 팩토리'], url: 'https://careers.lg.com/main/index.do' },
+  // Tier 2 - 공공기관/중견기업
+  { id: 'gj5', name: '한전KDN', logo: '💡', tier: 'tier2', country: 'gj', field: '전력IT/SI', position: '전력 계통 SW 개발', status: 'target', notes: '전남 나주', salary: '', techStack: ['JAVA', 'JSP', 'eGovFrame', 'SQL'], url: 'https://www.kdn.com/content/recruit' },
+  { id: 'gj6', name: '한국인터넷진흥원', logo: '🛡️', tier: 'tier2', country: 'gj', field: '보안/공공', position: '사이버 보안 분석', status: 'target', notes: 'KISA, 전남 나주', salary: '', techStack: ['정보보안기사', 'CISA', 'CISSP'], url: 'https://www.kisa.or.kr/401' },
+  { id: 'gj7', name: '전력거래소', logo: '📊', tier: 'tier2', country: 'gj', field: '전력시장/공공', position: '전력 시장 시스템 개발', status: 'target', notes: '전남 나주', salary: '', techStack: ['실시간 데이터', '대용량 DB'], url: 'https://www.kpx.or.kr/www/main.do' },
+  { id: 'gj8', name: '한국농수산식품유통공사', logo: '🌾', tier: 'tier2', country: 'gj', field: '농수산/빅데이터', position: '빅데이터 분석', status: 'target', notes: 'aT, 전남 나주', salary: '', techStack: ['데이터 마이닝', '통계 분석'], url: 'https://at.or.kr/home/recruit' },
+  { id: 'gj9', name: '한국방송통신전파진흥원', logo: '📡', tier: 'tier2', country: 'gj', field: '전파/통신', position: '전파 관리 시스템 운영', status: 'target', notes: 'KCA, 전남 나주', salary: '', techStack: ['네트워크', '통신망 설계'], url: 'https://www.kca.kr/open_content/ko/recruit' },
+  { id: 'gj10', name: '사립학교교직원연금공단', logo: '🏫', tier: 'tier2', country: 'gj', field: '금융/공공', position: '연금 관리 시스템 운영', status: 'target', notes: '전남 나주', salary: '', techStack: ['금융 전산', 'DB 최적화'], url: 'https://www.tp.or.kr/main.do' },
+  { id: 'gj11', name: '한국콘텐츠진흥원', logo: '🎬', tier: 'tier2', country: 'gj', field: '콘텐츠/CT', position: 'CT 연구 지원 및 DB 운영', status: 'target', notes: 'KOCCA, 전남 나주', salary: '', techStack: ['문화기술', '시스템 기획'], url: 'https://www.kocca.kr/kocca/recruit' },
+  { id: 'gj12', name: '농림식품기술기획평가원', logo: '🌱', tier: 'tier2', country: 'gj', field: 'R&D관리/공공', position: 'R&D 관리 시스템 운영', status: 'target', notes: '전남 나주', salary: '', techStack: ['국책과제 관리', '인프라 운영'], url: 'https://www.ipet.re.kr/recruit' },
+  { id: 'gj13', name: '농림수산식품교육문화정보원', logo: '🚜', tier: 'tier2', country: 'gj', field: '스마트팜/빅데이터', position: '스마트팜 서비스 개발', status: 'target', notes: '전남 나주', salary: '', techStack: ['클라우드', '빅데이터'], url: 'https://www.epis.or.kr' },
+  { id: 'gj14', name: 'HD현대삼호', logo: '🚢', tier: 'tier2', country: 'gj', field: '조선/ICT', position: '스마트 조선소 ICT', status: 'target', notes: '전남 영암, 영어 OPIc IM2', salary: '', techStack: ['ICT 인프라', '학사 이상'], url: 'https://hd-hhi.co.kr/career' },
+  { id: 'gj15', name: '광주은행', logo: '🏦', tier: 'tier2', country: 'gj', field: '금융/지방은행', position: '디지털 뱅킹 개발', status: 'target', notes: '광주 동구', salary: '', techStack: ['JAVA', '모바일', '보안'], url: 'https://www.kjbank.com/recruit' },
+  { id: 'gj16', name: 'GS칼텍스', logo: '⛽', tier: 'tier2', country: 'gj', field: '에너지/ERP', position: '플랜트 자동화 및 ERP', status: 'target', notes: '전남 여수', salary: '', techStack: ['SAP', '공정 제어(OT)'], url: 'https://www.gscaltex.com/ko/careers' },
+  { id: 'gj17', name: '기아 광주공장', logo: '🚗', tier: 'tier2', country: 'gj', field: '자동차/MES', position: '생산 관리 시스템(MES)', status: 'target', notes: '광주 서구', salary: '', techStack: ['스마트 공정', '네트워크 보안'], url: 'https://career.kia.com' },
+  { id: 'gj18', name: '금호타이어', logo: '🛞', tier: 'tier2', country: 'gj', field: '제조/SCM', position: '글로벌 SCM 전산', status: 'target', notes: '광주 광산', salary: '', techStack: ['ERP', '물류 시스템'], url: 'https://www.kumhotire.com/ko/recruit' },
+  { id: 'gj19', name: '한화솔루션', logo: '☀️', tier: 'tier2', country: 'gj', field: '화학/자동화', position: '화학 공정 자동화', status: 'target', notes: '전남 여수', salary: '', techStack: ['스마트 생산', '전산 인프라'], url: 'https://www.hanwhasolutions.com/recruit' },
+  { id: 'gj20', name: '롯데케미칼', logo: '🔬', tier: 'tier2', country: 'gj', field: '화학/보안', position: '산단 제조 ICT 및 보안', status: 'target', notes: '전남 여수', salary: '', techStack: ['보안 관제', '공정 데이터'], url: 'https://www.lottechem.com/recruit' },
+  { id: 'gj21', name: '인공지능산업융합사업단', logo: '🤖', tier: 'tier2', country: 'gj', field: 'AI/공공', position: 'AI 프로젝트 관리', status: 'target', notes: '광주 북구', salary: '', techStack: ['AI 모델', '사업 기획'], url: 'https://www.ai-hub.or.kr' },
+  { id: 'gj22', name: '광주과학기술원', logo: '🔬', tier: 'tier2', country: 'gj', field: 'AI/연구', position: 'AI/로보틱스 연구', status: 'target', notes: 'GIST, 광주 북구', salary: '', techStack: ['Python', 'C++', '석박사 우대'], url: 'https://www.gist.ac.kr/kr/html/recruit' },
+  // Tier 3 - 지역 IT기업/스타트업
+  { id: 'gj23', name: '라인정보통신', logo: '💻', tier: 'tier3', country: 'gj', field: 'SI/유지보수', position: '한전KDN 시스템 유지보수', status: 'target', notes: '전남 나주 파견', salary: '', techStack: ['JAVA', 'WebSquare', 'SQL'], url: 'https://www.lineinfo.co.kr' },
+  { id: 'gj24', name: '카라멜라', logo: '🍬', tier: 'tier3', country: 'gj', field: '공공SI/SW', position: '공공기관 응용 SW 개발', status: 'target', notes: '전남 나주', salary: '', techStack: ['JAVA', 'JSP', '웹 개발'], url: 'https://www.caramela.co.kr' },
+  { id: 'gj25', name: '누리씨앤아이', logo: '🔒', tier: 'tier3', country: 'gj', field: '보안/네트워크', position: '정보 보안 설비 유지보수', status: 'target', notes: '전남 광양', salary: '', techStack: ['CCTV', '보안', '네트워크'], url: 'https://www.nuri.co.kr' },
+  { id: 'gj26', name: '서번텍', logo: '🖥️', tier: 'tier3', country: 'gj', field: 'HW/유지보수', position: '제철소 퍼스컴 점검', status: 'target', notes: '전남 광양', salary: '', techStack: ['HW 유지보수', 'PC 인프라'], url: 'https://www.subuntech.co.kr' },
+  { id: 'gj27', name: '호그린에어', logo: '🚁', tier: 'tier3', country: 'gj', field: '드론/ICT', position: '드론 제어 시스템 개발', status: 'target', notes: '광주 광산', salary: '', techStack: ['무인 항공 제어', 'SW 개발'], url: 'https://www.hogreenair.com' },
+  { id: 'gj28', name: '오딧세이글로벌', logo: '🔌', tier: 'tier3', country: 'gj', field: '스마트가전/융합', position: '스마트 가전 융합 개발', status: 'target', notes: '광주 서구', salary: '', techStack: ['IT/전자 융합', '시스템 설계'], url: 'https://www.odysseyglobal.co.kr' },
+  { id: 'gj29', name: '유니컴퍼니', logo: '📲', tier: 'tier3', country: 'gj', field: 'IT플랫폼/앱', position: '웹/앱 응용 SW 개발', status: 'target', notes: '광주 서구', salary: '', techStack: ['웹/앱 개발', '서비스 운영'], url: 'https://www.uni-company.kr' },
+  { id: 'gj30', name: '엘탑', logo: '📋', tier: 'tier3', country: 'gj', field: '공공SI/ISP', position: '공공 정보화 전략 개발', status: 'target', notes: '광주 북구', salary: '', techStack: ['ISP', 'SW 아키텍처'], url: 'https://www.ltop.co.kr' },
 ]
 
 function companyRowToRecord(row: string[], headers: string[]): Company {
@@ -235,6 +144,8 @@ function companyRowToRecord(row: string[], headers: string[]): Company {
     name: record.name || '',
     logo: record.logo || '📋',
     tier: (record.tier as Company['tier']) || 'tier3',
+    country: (record.country as Country) || 'kr',
+    field: record.field || '',
     position: record.position || '',
     status: (record.status as ApplicationStatus) || 'target',
     deadline: record.deadline || undefined,
@@ -252,6 +163,8 @@ function companyRecordToRow(record: Company): string[] {
     record.name,
     record.logo,
     record.tier,
+    record.country,
+    record.field,
     record.position,
     record.status,
     record.deadline || '',
@@ -265,8 +178,8 @@ function companyRecordToRow(record: Company): string[] {
 
 export function CompanyPage() {
   const [selectedTier, setSelectedTier] = useState<'all' | 'tier1' | 'tier2' | 'tier3'>('all')
+  const [selectedCountry, setSelectedCountry] = useState<'all' | 'kr' | 'jp' | 'gj'>('all')
   const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus | 'all'>('all')
-  const [editingId, setEditingId] = useState<string | null>(null)
 
   // Google Sheets 연동 - 지원 현황
   const {
@@ -288,26 +201,36 @@ export function CompanyPage() {
   const [companies, setCompanies] = useState<Company[]>(INITIAL_COMPANIES)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Sheets에서 불러온 데이터로 companies 초기화
+  // Sheets에서 불러온 데이터로 companies 초기화 (INITIAL_COMPANIES와 병합)
   useEffect(() => {
-    if (!compLoading && companiesFromSheet.length > 0 && !isInitialized) {
-      setCompanies(companiesFromSheet)
-      setIsInitialized(true)
-    } else if (!compLoading && companiesFromSheet.length === 0 && isSignedIn && !isInitialized) {
-      // 처음 사용하는 경우 초기 회사 목록 저장
-      const saveInitialCompanies = async () => {
-        for (const company of INITIAL_COMPANIES) {
-          await addCompany(company)
+    if (!compLoading && isSignedIn && !isInitialized) {
+      // 기존 Sheet 데이터의 ID 목록
+      const existingIds = new Set(companiesFromSheet.map(c => c.id))
+
+      // Sheet에 없는 INITIAL_COMPANIES 찾기
+      const missingCompanies = INITIAL_COMPANIES.filter(c => !existingIds.has(c.id))
+
+      if (missingCompanies.length > 0) {
+        // 누락된 회사들 Sheet에 추가
+        const saveMissingCompanies = async () => {
+          for (const company of missingCompanies) {
+            await addCompany(company)
+          }
         }
-        setIsInitialized(true)
+        saveMissingCompanies()
       }
-      saveInitialCompanies()
+
+      // 병합된 데이터로 상태 업데이트 (Sheet 데이터 + 누락된 회사들)
+      const mergedCompanies = [...companiesFromSheet, ...missingCompanies]
+      setCompanies(mergedCompanies)
+      setIsInitialized(true)
     }
   }, [compLoading, companiesFromSheet, isSignedIn, isInitialized, addCompany])
 
   // Filter companies
   const filteredCompanies = companies.filter(c => {
     if (selectedTier !== 'all' && c.tier !== selectedTier) return false
+    if (selectedCountry !== 'all' && c.country !== selectedCountry) return false
     if (selectedStatus !== 'all' && c.status !== selectedStatus) return false
     return true
   })
@@ -333,17 +256,6 @@ export function CompanyPage() {
 
     setCompanies(prev => prev.map(c => c.id === id ? updatedCompany : c))
     await updateCompany(id, updatedCompany)
-  }
-
-  // Update company notes
-  const updateNotes = async (id: string, notes: string) => {
-    const company = companies.find(c => c.id === id)
-    if (!company) return
-
-    const updatedCompany = { ...company, notes }
-    setCompanies(prev => prev.map(c => c.id === id ? updatedCompany : c))
-    await updateCompany(id, updatedCompany)
-    setEditingId(null)
   }
 
   // Get tier label
@@ -427,59 +339,54 @@ export function CompanyPage() {
         </button>
       </PageHeader>
 
-      {/* Goal Banner */}
-      <div className="mb-4 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl p-4">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🏆</span>
-          <div>
-            <div className="text-white font-bold text-lg">최종 목표: IT 대기업 입사</div>
-            <div className="text-gray-400 text-sm">체계적인 준비와 지원으로 꿈의 회사에 도전합니다</div>
-          </div>
+      {/* Stats - Compact */}
+      <div className="flex items-center gap-4 mb-3 bg-gray-800 rounded-xl px-4 py-2">
+        <span className="text-lg">🏆</span>
+        <div className="flex gap-4 text-sm">
+          <span className="text-white"><span className="font-bold">{stats.total}</span> 타겟</span>
+          <span className="text-blue-400"><span className="font-bold">{stats.applied}</span> 지원</span>
+          <span className="text-purple-400"><span className="font-bold">{stats.inProgress}</span> 진행</span>
+          <span className="text-green-400"><span className="font-bold">{stats.offers}</span> 합격</span>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        <div className="bg-gray-800 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-white">{stats.total}</div>
-          <div className="text-xs text-gray-500">타겟 회사</div>
-        </div>
-        <div className="bg-gray-800 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-blue-400">{stats.applied}</div>
-          <div className="text-xs text-gray-500">지원 완료</div>
-        </div>
-        <div className="bg-gray-800 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-purple-400">{stats.inProgress}</div>
-          <div className="text-xs text-gray-500">진행 중</div>
-        </div>
-        <div className="bg-gray-800 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-green-400">{stats.offers}</div>
-          <div className="text-xs text-gray-500">합격</div>
-        </div>
+        <div className="flex-1"></div>
+        <span className="text-xs text-gray-500">🇰🇷 {companies.filter(c => c.country === 'kr').length} | 🇯🇵 {companies.filter(c => c.country === 'jp').length} | 🏔️ {companies.filter(c => c.country === 'gj').length}</span>
       </div>
 
       {/* Filters */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         <select
+          value={selectedCountry}
+          onChange={(e) => setSelectedCountry(e.target.value as typeof selectedCountry)}
+          className="px-3 py-1.5 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">🌏 전체</option>
+          <option value="kr">🇰🇷 한국</option>
+          <option value="jp">🇯🇵 일본</option>
+          <option value="gj">🏔️ 광주/전남</option>
+        </select>
+        <select
           value={selectedTier}
           onChange={(e) => setSelectedTier(e.target.value as typeof selectedTier)}
-          className="px-3 py-2 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">전체 티어</option>
-          <option value="tier1">Tier 1 - 최상위</option>
-          <option value="tier2">Tier 2 - 대기업</option>
-          <option value="tier3">Tier 3 - 스타트업</option>
+          <option value="tier1">Tier 1</option>
+          <option value="tier2">Tier 2</option>
+          <option value="tier3">Tier 3</option>
         </select>
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value as typeof selectedStatus)}
-          className="px-3 py-2 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">전체 상태</option>
           {Object.entries(STATUS_CONFIG).map(([key, config]) => (
             <option key={key} value={key}>{config.label}</option>
           ))}
         </select>
+        <span className="px-3 py-1.5 text-gray-400 text-sm">
+          {filteredCompanies.length}개
+        </span>
       </div>
 
       {/* Saving indicator */}
@@ -489,217 +396,100 @@ export function CompanyPage() {
         </div>
       )}
 
-      {/* Company List */}
-      <div className="space-y-3">
-        {filteredCompanies.map(company => {
-          const tierInfo = getTierLabel(company.tier)
-          const statusConfig = STATUS_CONFIG[company.status]
+      {/* Company List - Compact View */}
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <div className="divide-y divide-gray-700">
+          {filteredCompanies.map(company => {
+            const tierInfo = getTierLabel(company.tier)
+            const statusConfig = STATUS_CONFIG[company.status]
 
-          return (
-            <div key={company.id} className="bg-gray-800 rounded-2xl p-4">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{company.logo}</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-white">{company.name}</span>
-                      <span className={`text-xs ${tierInfo.color}`}>{tierInfo.label}</span>
-                    </div>
-                    <div className="text-sm text-gray-400">{company.position}</div>
+            return (
+              <div key={company.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-700/50 transition-colors">
+                {/* Logo & Name */}
+                <span className="text-lg flex-shrink-0 w-7">{company.logo}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-white text-sm truncate">{company.name}</span>
+                    <span className="text-xs text-gray-500">{company.country === 'jp' ? '🇯🇵' : company.country === 'gj' ? '🏔️' : '🇰🇷'}</span>
+                    <span className={`text-xs ${tierInfo.color} hidden sm:inline`}>{tierInfo.label}</span>
                   </div>
+                  <div className="text-xs text-gray-500 truncate">{company.field}</div>
                 </div>
+
+                {/* Status */}
+                <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${statusConfig.bgColor} ${statusConfig.color}`}>
+                  {statusConfig.label}
+                </span>
+
+                {/* Actions */}
+                <div className="flex gap-1 flex-shrink-0">
+                  {company.status === 'target' && (
+                    <button onClick={() => updateStatus(company.id, 'preparing')} className="p-1 text-yellow-400 hover:bg-yellow-500/20 rounded" title="준비 시작">▶</button>
+                  )}
+                  {company.status === 'preparing' && (
+                    <button onClick={() => updateStatus(company.id, 'applied')} className="p-1 text-blue-400 hover:bg-blue-500/20 rounded" title="지원 완료">📤</button>
+                  )}
+                  {company.status === 'applied' && (
+                    <>
+                      <button onClick={() => updateStatus(company.id, 'document')} className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded" title="서류 통과">✓</button>
+                      <button onClick={() => updateStatus(company.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">✗</button>
+                    </>
+                  )}
+                  {company.status === 'document' && (
+                    <>
+                      <button onClick={() => updateStatus(company.id, 'interview1')} className="p-1 text-purple-400 hover:bg-purple-500/20 rounded" title="1차 면접">1</button>
+                      <button onClick={() => updateStatus(company.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">✗</button>
+                    </>
+                  )}
+                  {company.status === 'interview1' && (
+                    <>
+                      <button onClick={() => updateStatus(company.id, 'interview2')} className="p-1 text-pink-400 hover:bg-pink-500/20 rounded" title="최종 면접">2</button>
+                      <button onClick={() => updateStatus(company.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">✗</button>
+                    </>
+                  )}
+                  {company.status === 'interview2' && (
+                    <>
+                      <button onClick={() => updateStatus(company.id, 'offer')} className="p-1 text-green-400 hover:bg-green-500/20 rounded" title="합격">🎉</button>
+                      <button onClick={() => updateStatus(company.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">✗</button>
+                    </>
+                  )}
+                  {(company.status === 'offer' || company.status === 'rejected') && (
+                    <button onClick={() => updateStatus(company.id, 'target')} className="p-1 text-gray-400 hover:bg-gray-600 rounded" title="리셋">↺</button>
+                  )}
+                </div>
+
+                {/* Link */}
                 {company.url && (
                   <a
                     href={company.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white"
+                    className="p-1 text-gray-500 hover:text-white flex-shrink-0"
+                    title="채용 페이지"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>
                 )}
-              </div>
-
-              {/* Tech Stack */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {company.techStack.map(tech => (
-                  <span key={tech} className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded">
-                    {tech}
-                  </span>
-                ))}
-                {company.salary && (
-                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">
-                    {company.salary}
-                  </span>
-                )}
-              </div>
-
-              {/* Notes */}
-              {editingId === company.id ? (
-                <div className="mb-3">
-                  <textarea
-                    defaultValue={company.notes}
-                    onBlur={(e) => updateNotes(company.id, e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 rounded-lg text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={2}
-                    autoFocus
-                  />
-                </div>
-              ) : (
-                <div
-                  onClick={() => setEditingId(company.id)}
-                  className="mb-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300"
-                >
-                  {company.notes || '메모를 추가하세요...'}
-                </div>
-              )}
-
-              {/* Status & Actions */}
-              <div className="flex items-center justify-between">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
-                  {statusConfig.label}
-                </span>
-                <div className="flex gap-1">
-                  {company.status === 'target' && (
-                    <button
-                      onClick={() => updateStatus(company.id, 'preparing')}
-                      className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-lg text-xs hover:bg-yellow-500/30"
-                    >
-                      준비 시작
-                    </button>
-                  )}
-                  {company.status === 'preparing' && (
-                    <button
-                      onClick={() => updateStatus(company.id, 'applied')}
-                      className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30"
-                    >
-                      지원 완료
-                    </button>
-                  )}
-                  {company.status === 'applied' && (
-                    <>
-                      <button
-                        onClick={() => updateStatus(company.id, 'document')}
-                        className="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded-lg text-xs hover:bg-cyan-500/30"
-                      >
-                        서류 통과
-                      </button>
-                      <button
-                        onClick={() => updateStatus(company.id, 'rejected')}
-                        className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30"
-                      >
-                        불합격
-                      </button>
-                    </>
-                  )}
-                  {company.status === 'document' && (
-                    <>
-                      <button
-                        onClick={() => updateStatus(company.id, 'interview1')}
-                        className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs hover:bg-purple-500/30"
-                      >
-                        1차 면접
-                      </button>
-                      <button
-                        onClick={() => updateStatus(company.id, 'rejected')}
-                        className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30"
-                      >
-                        불합격
-                      </button>
-                    </>
-                  )}
-                  {company.status === 'interview1' && (
-                    <>
-                      <button
-                        onClick={() => updateStatus(company.id, 'interview2')}
-                        className="px-3 py-1 bg-pink-500/20 text-pink-400 rounded-lg text-xs hover:bg-pink-500/30"
-                      >
-                        최종 면접
-                      </button>
-                      <button
-                        onClick={() => updateStatus(company.id, 'rejected')}
-                        className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30"
-                      >
-                        불합격
-                      </button>
-                    </>
-                  )}
-                  {company.status === 'interview2' && (
-                    <>
-                      <button
-                        onClick={() => updateStatus(company.id, 'offer')}
-                        className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-xs hover:bg-green-500/30"
-                      >
-                        합격!
-                      </button>
-                      <button
-                        onClick={() => updateStatus(company.id, 'rejected')}
-                        className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30"
-                      >
-                        불합격
-                      </button>
-                    </>
-                  )}
-                  {(company.status === 'offer' || company.status === 'rejected') && (
-                    <button
-                      onClick={() => updateStatus(company.id, 'target')}
-                      className="px-3 py-1 bg-gray-600 text-gray-300 rounded-lg text-xs hover:bg-gray-500"
-                    >
-                      리셋
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Applied Date */}
-              {company.appliedDate && (
-                <div className="mt-2 text-xs text-gray-500">
-                  지원일: {company.appliedDate}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Progress Pipeline */}
-      <div className="mt-6 bg-gray-800 rounded-2xl p-4">
-        <h3 className="text-white font-bold mb-4">지원 파이프라인</h3>
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-            const count = companies.filter(c => c.status === status).length
-            return (
-              <div key={status} className={`flex-shrink-0 w-24 p-3 rounded-xl ${config.bgColor}`}>
-                <div className={`text-2xl font-bold ${config.color}`}>{count}</div>
-                <div className="text-xs text-gray-400">{config.label}</div>
               </div>
             )
           })}
         </div>
       </div>
 
-      {/* Tips */}
-      <div className="mt-4 bg-gray-800 rounded-2xl p-4">
-        <h3 className="text-white font-bold mb-3">취업 준비 체크리스트</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-gray-400">
-            <span>☐</span> 이력서/자기소개서 작성 및 첨삭
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <span>☐</span> 포트폴리오 정리 (GitHub, 프로젝트)
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <span>☐</span> 코딩테스트 준비 (알고리즘, 자료구조)
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <span>☐</span> 기술 면접 준비 (CS 기초, 프로젝트 경험)
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <span>☐</span> 인성 면접 준비 (STAR 기법)
-          </div>
+      {/* Progress Pipeline - Compact */}
+      <div className="mt-4 bg-gray-800 rounded-xl p-3">
+        <div className="flex gap-1 overflow-x-auto">
+          {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+            const count = companies.filter(c => c.status === status).length
+            return (
+              <div key={status} className={`flex-shrink-0 px-3 py-1.5 rounded-lg ${config.bgColor} text-center min-w-16`}>
+                <div className={`text-lg font-bold ${config.color}`}>{count}</div>
+                <div className="text-xs text-gray-400">{config.label}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

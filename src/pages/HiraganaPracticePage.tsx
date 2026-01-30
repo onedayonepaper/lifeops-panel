@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { markTaskComplete } from '../utils/roundTaskUtils'
+import { markTaskComplete } from '../utils/routineTaskUtils'
 import { useLifeOpsSheets, SHEET_CONFIGS } from '../hooks/useLifeOpsSheets'
 
 interface JapaneseRecord {

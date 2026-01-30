@@ -7,19 +7,46 @@ interface NavItem {
   icon: string
 }
 
-const navItems: NavItem[] = [
-  { path: '/', label: '오늘', icon: '🎯' },
-  { path: '/dashboard', label: '대시보드', icon: '📊' },
-  { path: '/calendar', label: '캘린더', icon: '📅' },
-  { path: '/life-anchors', label: '생활 앵커', icon: '🔔' },
-  { path: '/goals', label: '목표', icon: '🏆' },
-  { path: '/spec', label: '스펙', icon: '📋' },
-  { path: '/resume', label: '이력서', icon: '📄' },
-  { path: '/apply', label: '지원', icon: '📝' },
-  { path: '/company', label: '회사', icon: '🏢' },
-  { path: '/tasks', label: '할일', icon: '✅' },
-  { path: '/bucket-list', label: '버킷리스트', icon: '🪣' },
-  { path: '/study-journal', label: '공부장', icon: '📚' },
+interface NavGroup {
+  label: string
+  icon: string
+  path: string
+  children: NavItem[]
+}
+
+type NavEntry = NavItem | NavGroup
+
+const isNavGroup = (entry: NavEntry): entry is NavGroup => {
+  return 'children' in entry
+}
+
+const navItems: NavEntry[] = [
+  {
+    label: '플랜',
+    icon: '📋',
+    path: '/calendar',
+    children: [
+      { path: '/today', label: '오늘 카드', icon: '🌅' },
+      { path: '/calendar', label: '캘린더', icon: '📅' },
+      { path: '/tasks', label: '할일', icon: '✅' },
+      { path: '/life-anchors', label: '생활 앵커', icon: '🔔' },
+      { path: '/study-journal', label: '공부장', icon: '📚' },
+    ]
+  },
+  {
+    label: '커리어',
+    icon: '🚀',
+    path: '/employment',
+    children: [
+      { path: '/profile', label: '프로필', icon: '🧠' },
+      { path: '/portfolio', label: '프로젝트 관리', icon: '💼' },
+      { path: '/resume', label: '취업서류', icon: '📄' },
+      { path: '/apply', label: '지원', icon: '📝' },
+      { path: '/company', label: '회사', icon: '🏢' },
+      { path: '/public-sector-it', label: '공공기관 IT', icon: '🏛️' },
+      { path: '/job-documents', label: '취업지원모음', icon: '📂' },
+    ]
+  },
 ]
 
 interface SidebarProps {
@@ -30,6 +57,19 @@ export function Sidebar({ isNightMode }: SidebarProps) {
   const location = useLocation()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['커리어'])
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev =>
+      prev.includes(label)
+        ? prev.filter(g => g !== label)
+        : [...prev, label]
+    )
+  }
+
+  const isChildActive = (children: NavItem[]) => {
+    return children.some(child => location.pathname === child.path)
+  }
 
   return (
     <>
@@ -84,6 +124,82 @@ export function Sidebar({ isNightMode }: SidebarProps) {
         <nav className="p-2 flex-1">
           <ul className="space-y-1">
             {navItems.map((item) => {
+              if (isNavGroup(item)) {
+                const isExpanded = expandedGroups.includes(item.label)
+                const hasActiveChild = isChildActive(item.children)
+                const isGroupActive = location.pathname === item.path
+
+                return (
+                  <li key={item.label}>
+                    {/* Group Header */}
+                    <div className="flex items-center">
+                      <Link
+                        to={item.path}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={`
+                          flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
+                          ${isGroupActive
+                            ? 'bg-blue-600 text-white'
+                            : hasActiveChild
+                              ? 'bg-gray-800 text-white'
+                              : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                          }
+                          ${isCollapsed ? 'justify-center' : ''}
+                        `}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        <span className="text-xl">{item.icon}</span>
+                        {!isCollapsed && (
+                          <span className="font-medium">{item.label}</span>
+                        )}
+                      </Link>
+                      {!isCollapsed && (
+                        <button
+                          onClick={() => toggleGroup(item.label)}
+                          className="p-2 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <svg
+                            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Children */}
+                    {!isCollapsed && isExpanded && (
+                      <ul className="mt-1 ml-4 space-y-1">
+                        {item.children.map((child) => {
+                          const isChildItemActive = location.pathname === child.path
+                          return (
+                            <li key={child.path}>
+                              <Link
+                                to={child.path}
+                                onClick={() => setIsMobileOpen(false)}
+                                className={`
+                                  flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm
+                                  ${isChildItemActive
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                                  }
+                                `}
+                              >
+                                <span className="text-lg">{child.icon}</span>
+                                <span className="font-medium">{child.label}</span>
+                              </Link>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                )
+              }
+
               const isActive = location.pathname === item.path
               return (
                 <li key={item.path}>

@@ -1,54 +1,13 @@
-import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { useGoogleAuth } from '../contexts/GoogleAuthContext'
 import { useGoogleDocs } from '../hooks/useGoogleDocs'
-
-interface TilPost {
-  name: string
-  path: string
-  html_url: string
-  category: string
-}
 
 export default function ResumeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { accessToken } = useGoogleAuth()
   const { getResumeData, getResumeMeta, getDocumentUrl, deleteResume } = useGoogleDocs(accessToken)
-  const [tilPosts, setTilPosts] = useState<TilPost[]>([])
-
-  useEffect(() => {
-    async function fetchTilPosts() {
-      try {
-        const categories = ['php', 'oracle', 'javascript', 'linux', 'go', 'algorithm']
-        const allPosts: TilPost[] = []
-
-        for (const category of categories) {
-          const response = await fetch(
-            `https://api.github.com/repos/onedayonepaper/til/contents/${category}`
-          )
-          if (response.ok) {
-            const files = await response.json()
-            const mdFiles = files.filter((f: { name: string }) => f.name.endsWith('.md'))
-            mdFiles.forEach((file: { name: string; path: string; html_url: string }) => {
-              allPosts.push({
-                ...file,
-                category: category.toUpperCase()
-              })
-            })
-          }
-        }
-
-        // 최근 3개만 표시 (역순으로 정렬)
-        setTilPosts(allPosts.slice(-3).reverse())
-      } catch (error) {
-        console.error('TIL 포스트 로딩 실패:', error)
-      }
-    }
-
-    fetchTilPosts()
-  }, [])
 
   const meta = id ? getResumeMeta(id) : null
   const data = id ? getResumeData(id) : null
@@ -56,7 +15,7 @@ export default function ResumeDetailPage() {
   if (!id || !data || !meta) {
     return (
       <div>
-        <PageHeader icon="📄" title="이력서" />
+        <PageHeader icon="📄" title="취업서류" />
         <div className="bg-gray-800 rounded-2xl p-8 text-center">
           <div className="text-5xl mb-4">😢</div>
           <p className="text-gray-400 mb-4">이력서를 찾을 수 없습니다</p>
@@ -88,6 +47,15 @@ export default function ResumeDetailPage() {
           >
             ← 목록
           </Link>
+          <Link
+            to={`/resume/${id}/edit`}
+            className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            수정하기
+          </Link>
           <a
             href={getDocumentUrl(id)}
             target="_blank"
@@ -97,7 +65,7 @@ export default function ResumeDetailPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
-            Google Docs
+            Google 문서로 보기
           </a>
           <button
             onClick={handleDelete}
@@ -181,112 +149,6 @@ export default function ResumeDetailPage() {
                   >
                     {skill}
                   </span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* TIL Blog Posts */}
-          {tilPosts.length > 0 && (
-            <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-blue-600">
-                📚 최근 학습 기록 (TIL)
-              </h2>
-              <div className="space-y-3">
-                {tilPosts.map((post, idx) => (
-                  <a
-                    key={idx}
-                    href={post.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                        {post.category}
-                      </span>
-                      <span className="text-gray-800 font-medium">
-                        {post.name.replace('.md', '').replace(/-/g, ' ')}
-                      </span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-              <a
-                href="https://github.com/onedayonepaper/til"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                → 전체 TIL 보기
-              </a>
-            </section>
-          )}
-
-          {/* Experience */}
-          {data.experience.length > 0 && (
-            <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-blue-600">
-                경력사항
-              </h2>
-              <div className="space-y-6">
-                {data.experience.map((exp, idx) => (
-                  <div key={idx} className="border-l-4 border-blue-600 pl-4">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="text-lg font-bold text-gray-900">{exp.company}</h3>
-                      <span className="text-sm text-gray-500">
-                        {exp.startDate} ~ {exp.endDate}
-                      </span>
-                    </div>
-                    <p className="text-blue-600 font-medium">{exp.position}</p>
-                    {exp.description && (
-                      <p className="text-gray-600 mt-2">{exp.description}</p>
-                    )}
-
-                    {/* Projects */}
-                    {exp.projects && exp.projects.length > 0 && (
-                      <div className="mt-4 space-y-4">
-                        {exp.projects.map((proj, pIdx) => (
-                          <div key={pIdx} className="bg-gray-50 rounded-lg p-4">
-                            <h4 className="font-bold text-gray-800 mb-2">
-                              📌 {proj.name}
-                            </h4>
-                            {proj.summary && (
-                              <p className="text-gray-600 text-sm mb-2">{proj.summary}</p>
-                            )}
-                            {proj.role && (
-                              <p className="text-sm mb-2">
-                                <span className="font-medium text-gray-700">역할:</span>{' '}
-                                <span className="text-gray-600">{proj.role}</span>
-                              </p>
-                            )}
-                            {proj.tasks && proj.tasks.length > 0 && (
-                              <div className="mb-2">
-                                <span className="font-medium text-gray-700 text-sm">주요 작업:</span>
-                                <ul className="list-disc list-inside text-gray-600 text-sm mt-1 space-y-1">
-                                  {proj.tasks.map((task, tIdx) => (
-                                    <li key={tIdx}>{task}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {proj.techStack && (
-                              <p className="text-sm">
-                                <span className="font-medium text-gray-700">기술:</span>{' '}
-                                <span className="text-blue-600">{proj.techStack}</span>
-                              </p>
-                            )}
-                            {proj.result && (
-                              <p className="text-sm mt-1">
-                                <span className="font-medium text-gray-700">성과:</span>{' '}
-                                <span className="text-green-600">{proj.result}</span>
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 ))}
               </div>
             </section>

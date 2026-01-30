@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
-import { markTaskComplete } from '../utils/roundTaskUtils'
+import { markTaskComplete } from '../utils/routineTaskUtils'
 import { useLifeOpsSheets, SHEET_CONFIGS } from '../hooks/useLifeOpsSheets'
 
 // 오늘의 미션 - 공고 1개 찾기
@@ -71,11 +71,24 @@ export function ApplyPage() {
 
   // 오늘의 미션 상태
   const [currentJobPosting, setCurrentJobPosting] = useState({
-    companyName: '',
-    position: '',
-    url: '',
-    deadline: '',
-    notes: ''
+    companyName: '한국인터넷진흥원(KISA)',
+    position: '기간제근로자(전문계약직)',
+    url: 'https://www.kisa.or.kr/404/form?postSeq=1383',
+    deadline: '2026-02-02 17:00',
+    notes: `[2026년 1차 기간제근로자(전문계약직) 채용]
+
+■ 예상 모집분야 (2025년 기준 참고)
+- 정책: 개인정보, 국제, 법제
+- 기술: R&D, 보안 엔지니어, 정보보안, 보안컨설팅
+- 경영: 경영, 경영정보, 사업기획
+
+■ 자격 가산점
+- 회계사/변호사/기술사/노무사: 5점
+- CISSP, CISA, PMP, ISMS-P, 정보보안기사: 3점
+- TOEIC 850점 이상: 2점
+
+■ 근무지: 나주 본원 / 서울 사무소
+■ 입사지원: https://kisa.applyin.co.kr`
   })
   const [isMissionExpanded, setIsMissionExpanded] = useState(true)
   const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null)

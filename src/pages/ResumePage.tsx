@@ -1,432 +1,294 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { useGoogleAuth } from '../contexts/GoogleAuthContext'
-import { useGoogleDocs, type ResumeData, type Education, type Experience, type Certification, type Project } from '../hooks/useGoogleDocs'
+import { useGoogleDocs, type DocumentMeta, type DocumentType } from '../hooks/useGoogleDocs'
 
-const emptyEducation: Education = {
-  school: '',
-  major: '',
-  degree: '',
-  startDate: '',
-  endDate: ''
-}
-
-const emptyProject: Project = {
-  name: '',
-  summary: '',
-  role: '',
-  tasks: [],
-  techStack: '',
-  result: ''
-}
-
-const emptyExperience: Experience = {
-  company: '',
-  position: '',
-  startDate: '',
-  endDate: '',
-  description: '',
-  projects: []
-}
-
-const emptyCertification: Certification = {
-  name: '',
-  issuer: '',
-  date: ''
-}
-
-const initialFormData: ResumeData = {
-  personalInfo: {
-    name: '최대열',
-    birthDate: '',
-    phone: '010-5711-7309',
-    email: 'eoduf1292@naver.com',
-    address: '',
-    blog: 'https://github.com/onedayonepaper/til',
-    github: 'https://github.com/onedayonepaper',
-    portfolio: ''
+// 문서 타입별 설정
+const DOC_CONFIG = {
+  resume: {
+    name: '이력서',
+    icon: '📄',
+    color: 'blue',
+    viewPath: '/resume',
+    editPath: '/resume/edit/new',
+    single: true, // 1개만 허용
   },
-  education: [
-    {
-      school: '조선대학교',
-      major: '용접접합과학공학과',
-      degree: '학사 (GPA 3.4/4.5)',
-      startDate: '2014.03',
-      endDate: '2020.02'
-    }
-  ],
-  experience: [
-    {
-      company: '다온플레이스(주)',
-      position: 'Web/Backend Developer',
-      startDate: '2024.12.19',
-      endDate: '현재',
-      description: '',
-      projects: [
-        {
-          name: '조회/리포트 성능 개선 및 안정화 (Oracle SQL 튜닝)',
-          summary: '통계/리포트성 조회 화면에서 발생하던 응답 지연을 실행계획 기반으로 분석해 SQL 구조를 개선',
-          role: '병목 SQL 식별 → 쿼리 리팩터링 → 운영 검증/반영',
-          tasks: [
-            '복잡 조인/서브쿼리 구조 개선, 필터 조건 정리로 병목 제거',
-            '날짜/조건 처리 방식 정리로 인덱스 활용 가능 구조로 변경',
-            '정합성 검증(결과 row count/샘플 비교) 후 운영 반영'
-          ],
-          techStack: 'Oracle SQL(실행계획/인덱스), PHP/JSP, 로그 기반 트러블슈팅',
-          result: '📊 주요 조회 화면 응답시간 6~8초 → 1~2초로 단축 (약 75% 개선)'
-        },
-        {
-          name: '권한/접근제어 체계 정비 및 운영 이슈 감소',
-          summary: '사용자/권한에 따른 메뉴·기능·데이터 접근 통제가 일관되게 동작하도록 권한 조건을 일원화',
-          role: '권한 로직 정비, 운영 접근 오류 분석/수정',
-          tasks: [
-            '권한 기반 메뉴/기능 노출 제어 로직 정리 및 예외 케이스 처리',
-            '데이터 조회 조건에 권한 필터 누락 방지 로직 보강',
-            '운영 접근 오류 발생 케이스 로그 분석 및 안정화'
-          ],
-          techStack: 'PHP/JSP, Oracle SQL, 세션/권한 로직, 로그 분석',
-          result: '📊 권한 누락/오적용 접근 오류 주간 5~7건 → 1~2건으로 감소 (약 70% 개선)'
-        }
-      ]
-    },
-    {
-      company: '엔솔루션',
-      position: 'Web/Backend Developer',
-      startDate: '2024.04.15',
-      endDate: '2024.12',
-      description: '',
-      projects: [
-        {
-          name: '운영 장애 대응 체계화 (500 오류/운영 이슈)',
-          summary: '간헐적으로 발생하는 500 오류 및 운영 이슈를 로그 기반으로 재현하고, 빠른 복구/재발 방지를 위한 대응 루틴을 정착',
-          role: '이슈 접수 → 재현/원인 분석 → 핫픽스/배포 → 운영 모니터링',
-          tasks: [
-            '요청 파라미터/권한/시간대 기준으로 실패 케이스 분리 및 재현',
-            '입력 검증/예외처리/쿼리 방어 로직으로 핫픽스 우선 적용',
-            '동일 유형 재발 방지를 위한 케이스 고정 및 운영 점검 강화'
-          ],
-          techStack: 'PHP/JSP, Oracle, 로그 분석, 운영 배포',
-          result: '📊 초동 분석+조치 평균 60분 → 20~30분으로 단축 (약 60% 개선)'
-        },
-        {
-          name: '배포 안정성 개선 (체크리스트/롤백 루틴)',
-          summary: '배포 후 긴급 수정이 반복되는 문제를 줄이기 위해 배포 절차를 문서화/표준화',
-          role: '배포 체크리스트 도입, 스모크 테스트 항목 정리',
-          tasks: [
-            '변경점(코드/DB/설정/권한/캐시) 기준 점검 항목 고정',
-            '핵심 화면 스모크 테스트(로그인/조회/등록/권한) 적용',
-            '장애 시 롤백/복구 절차 정리로 운영 대응 속도 개선'
-          ],
-          techStack: '배포 절차 문서화, 스모크 테스트, 롤백 루틴',
-          result: '📊 배포 후 긴급 수정/롤백 빈도 월 3~4회 → 0~1회로 감소 (약 80% 개선)'
-        }
-      ]
-    },
-    {
-      company: '브레인드넷 주식회사',
-      position: 'Web/Backend Developer',
-      startDate: '2022.11.07',
-      endDate: '2024.03.08',
-      description: '',
-      projects: [
-        {
-          name: '데이터 정합성 이슈 분석 및 오류 감소',
-          summary: '누락/중복/조건 불일치로 발생하던 데이터 오류를 원인 단위로 분해해 로직/검증을 강화',
-          role: '데이터 흐름 분석 → SQL/로직 개선 → 운영 반영/검증',
-          tasks: [
-            '데이터 생성/변경 시점과 조회 조건 불일치 구간을 식별해 로직 보완',
-            '입력 검증/예외처리 강화로 오류 케이스 사전 차단',
-            '운영에서 발생한 케이스 기반 재발 방지성 수정 반복'
-          ],
-          techStack: 'Oracle SQL, 트랜잭션/정합성 고려, PHP/JSP',
-          result: '📊 데이터 오류 관련 운영 문의 월 10~12건 → 3~5건으로 감소 (약 60% 개선)'
-        },
-        {
-          name: '사내 정보시스템 고도화 (프로세스/화면 개선)',
-          summary: '현업 업무 흐름을 개선하고 기능을 안정화하기 위한 고도화 작업 수행',
-          role: '요구사항 분석, 개발, 운영 반영, 사용자 피드백 기반 개선',
-          tasks: [
-            '기존 기능 리팩터링 및 신규 기능 개발',
-            '업무 규칙 변경에 따른 로직/화면 수정 및 예외 케이스 정리',
-            '반복 수기 작업을 시스템 처리로 전환(입력/조회/처리 단계 개선)'
-          ],
-          techStack: 'PHP/JSP, Oracle, JavaScript',
-          result: '운영 문의 감소 및 업무 처리 안정성 향상 (기능 개선 반복 사이클 정착)'
-        }
-      ]
-    },
-    {
-      company: '주식회사 다온',
-      position: 'Developer (Maintenance/Support)',
-      startDate: '2022.01.13',
-      endDate: '2022.04.26',
-      description: '운영 시스템 기능 수정 및 유지보수 지원 - 화면/로직 변경, 간단한 데이터 조회/정리, 운영 요청 대응',
-      projects: []
-    },
-    {
-      company: '한국생산기술연구원',
-      position: 'Technical Support',
-      startDate: '2021.10.01',
-      endDate: '2021.11.01',
-      description: '연구/업무 지원 및 데이터/문서 정리 - 자료 정리, 문서화, 협업 지원',
-      projects: []
-    },
-    {
-      company: '주식회사 아이엘알',
-      position: 'Developer Support',
-      startDate: '2020.12.31',
-      endDate: '2021.07.01',
-      description: '웹 시스템 운영 지원 및 기능 개선 보조 - 화면 수정, 데이터 조회 보완, 운영 대응 지원',
-      projects: []
-    },
-    {
-      company: '주식회사 미디어온',
-      position: 'Developer Support',
-      startDate: '2020.09.21',
-      endDate: '2020.10.06',
-      description: '단기 개발 지원 - 운영 보조 및 요청사항 처리 지원',
-      projects: []
-    },
-    {
-      company: '(주)아성은',
-      position: 'IT/Operations Support',
-      startDate: '2019.07.21',
-      endDate: '2020.02.11',
-      description: 'IT/운영 지원 및 업무 프로세스 보조 - 내부 요청 처리, 문서화/지원 업무',
-      projects: []
-    }
-  ],
-  certifications: [
-    { name: '컴퓨터활용능력 2급', issuer: '대한상공회의소', date: '' },
-    { name: 'PC정비사 2급', issuer: '한국정보통신자격협회', date: '' },
-    { name: '네트워크관리사 2급', issuer: '한국정보통신자격협회', date: '' },
-    { name: 'G-TELP 65', issuer: 'G-TELP Korea', date: '' }
-  ],
-  skills: [
-    'PHP(레거시)', 'JSP/Servlet', 'Oracle SQL', 'JavaScript', 'HTML/CSS',
-    '운영장애 대응', '권한/접근제어', '데이터 정합성', '리포트/통계', 'Linux'
-  ],
-  selfIntroduction: `레거시 웹 시스템(PHP/JSP) 기반의 업무 시스템 유지보수·고도화, Oracle 중심의 데이터 처리/조회 성능 개선, 운영 환경에서의 장애 대응과 안정화 경험을 보유한 개발자입니다.
+  career: {
+    name: '경력기술서',
+    icon: '📋',
+    color: 'green',
+    viewPath: '/career',
+    editPath: '/career/edit/new',
+    single: true,
+  },
+  project: {
+    name: '프로젝트',
+    icon: '🚀',
+    color: 'orange',
+    viewPath: '/project',
+    editPath: '/project/edit/new',
+    single: false, // 여러 개 허용
+  },
+} as const
 
-요구사항 정리부터 개발·배포·운영 대응까지 전 과정을 책임지고, 현업 사용자 관점에서 "실제로 쓰이는 기능"을 빠르게 개선하는 데 강점이 있습니다.
+// 색상 클래스 매핑
+const colorClasses = {
+  blue: {
+    badge: 'bg-blue-500/20 text-blue-400',
+    icon: 'text-blue-400',
+    button: 'bg-blue-600 hover:bg-blue-500',
+    border: 'border-blue-500/30',
+  },
+  green: {
+    badge: 'bg-green-500/20 text-green-400',
+    icon: 'text-green-400',
+    button: 'bg-green-600 hover:bg-green-500',
+    border: 'border-green-500/30',
+  },
+  orange: {
+    badge: 'bg-orange-500/20 text-orange-400',
+    icon: 'text-orange-400',
+    button: 'bg-orange-600 hover:bg-orange-500',
+    border: 'border-orange-500/30',
+  },
+}
 
-[핵심역량]
-• 레거시 시스템 유지보수/고도화: 기능 개선, 버그 수정, 프로세스 개선, 운영 안정화
-• Oracle SQL 기반 데이터 처리: 복잡 조회/리포트, 성능 개선(조인 구조 개선, 인덱스 고려, 쿼리 리팩터링)
-• 운영 장애 대응: 로그 기반 원인 분석, 핫픽스/배포, 재발 방지(예외처리/검증 강화)
-• 권한/접근제어: 시스템 접근 제한, 권한 기반 메뉴/기능 제어, 데이터 노출 통제
-• 협업/커뮤니케이션: 현업 요구사항 정의 → 개발 반영 → 운영 피드백 반영의 반복 개선 사이클`
+// 외부 링크 아이콘
+function ExternalLinkIcon() {
+  return (
+    <svg className="w-3 h-3 ml-0.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  )
+}
+
+// 단일 문서 카드 (이력서, 경력기술서)
+interface SingleDocCardProps {
+  type: 'resume' | 'career'
+  doc: DocumentMeta | undefined
+  onDelete: (id: string) => void
+  getDocumentUrl: (id: string) => string
+}
+
+function SingleDocCard({ type, doc, onDelete, getDocumentUrl }: SingleDocCardProps) {
+  const config = DOC_CONFIG[type]
+  const colors = colorClasses[config.color]
+
+  return (
+    <div className="bg-gray-700/50 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-white font-medium flex items-center gap-2">
+          <span className={colors.icon}>{config.icon}</span> {config.name}
+        </h4>
+        {doc && (
+          <span className={`px-2 py-0.5 ${colors.badge} text-xs rounded`}>생성됨</span>
+        )}
+      </div>
+
+      {doc ? (
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm truncate" title={doc.title}>{doc.title}</p>
+          <p className="text-gray-500 text-xs">
+            {new Date(doc.createdAt).toLocaleDateString('ko-KR', {
+              year: 'numeric', month: 'short', day: 'numeric'
+            })}
+          </p>
+          <div className="grid grid-cols-4 gap-1">
+            <Link
+              to={`${config.viewPath}/${doc.id}`}
+              className={`px-2 py-2 ${colors.button} text-white text-xs rounded-lg text-center transition-colors`}
+            >
+              보기
+            </Link>
+            <Link
+              to={`${config.viewPath}/${doc.id}/edit`}
+              className="px-2 py-2 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded-lg text-center transition-colors"
+            >
+              수정
+            </Link>
+            <a
+              href={getDocumentUrl(doc.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg text-center transition-colors flex items-center justify-center"
+              title="Google 문서에서 열기"
+            >
+              Docs<ExternalLinkIcon />
+            </a>
+            <button
+              onClick={() => onDelete(doc.id)}
+              className="px-2 py-2 bg-red-600 hover:bg-red-500 text-white text-xs rounded-lg text-center transition-colors"
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-4">
+          <p className="text-gray-500 text-sm mb-3">{config.name}가 없습니다</p>
+          <Link
+            to={config.editPath}
+            className={`px-4 py-2 ${colors.button} text-white text-sm rounded-lg inline-block transition-colors`}
+          >
+            + {config.name} 추가
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// 프로젝트 목록 카드 (여러 개 지원)
+interface ProjectListCardProps {
+  projects: DocumentMeta[]
+  onDelete: (id: string) => void
+  getDocumentUrl: (id: string) => string
+  getFolderUrl: (type: DocumentType) => string
+}
+
+function ProjectListCard({ projects, onDelete, getDocumentUrl, getFolderUrl }: ProjectListCardProps) {
+  const config = DOC_CONFIG.project
+  const colors = colorClasses[config.color]
+
+  return (
+    <div className="bg-gray-700/50 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-white font-medium flex items-center gap-2">
+          <span className={colors.icon}>{config.icon}</span> {config.name}
+          {projects.length > 0 && (
+            <span className={`px-2 py-0.5 ${colors.badge} text-xs rounded`}>{projects.length}개</span>
+          )}
+        </h4>
+        <div className="flex items-center gap-2">
+          <a
+            href={getFolderUrl('project')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-white text-xs flex items-center"
+            title="프로젝트 폴더 열기"
+          >
+            폴더<ExternalLinkIcon />
+          </a>
+          <Link
+            to={config.editPath}
+            className={`px-3 py-1 ${colors.button} text-white text-xs rounded-lg transition-colors`}
+          >
+            + 추가
+          </Link>
+        </div>
+      </div>
+
+      {projects.length > 0 ? (
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              className={`bg-gray-800/50 border ${colors.border} rounded-lg p-3`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white text-sm font-medium truncate flex-1" title={project.title}>
+                  {project.title}
+                </p>
+                <span className="text-gray-500 text-xs ml-2 whitespace-nowrap">
+                  {new Date(project.modifiedAt || project.createdAt).toLocaleDateString('ko-KR', {
+                    month: 'short', day: 'numeric'
+                  })}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <Link
+                  to={`${config.viewPath}/${project.id}`}
+                  className={`px-2 py-1.5 ${colors.button} text-white text-xs rounded text-center transition-colors`}
+                >
+                  보기
+                </Link>
+                <Link
+                  to={`${config.viewPath}/${project.id}/edit`}
+                  className="px-2 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded text-center transition-colors"
+                >
+                  수정
+                </Link>
+                <a
+                  href={getDocumentUrl(project.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded text-center transition-colors flex items-center justify-center"
+                >
+                  Docs<ExternalLinkIcon />
+                </a>
+                <button
+                  onClick={() => onDelete(project.id)}
+                  className="px-2 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs rounded text-center transition-colors"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-6">
+          <p className="text-gray-500 text-sm mb-3">프로젝트가 없습니다</p>
+          <p className="text-gray-600 text-xs mb-4">포트폴리오에 보여줄 프로젝트를 추가하세요</p>
+          <Link
+            to={config.editPath}
+            className={`px-4 py-2 ${colors.button} text-white text-sm rounded-lg inline-block transition-colors`}
+          >
+            + 첫 프로젝트 추가
+          </Link>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function ResumePage() {
   const { isSignedIn, signIn, accessToken } = useGoogleAuth()
-  const { resumes, isLoading, error, createResume, deleteResume, getDocumentUrl, getFolderUrl } = useGoogleDocs(accessToken)
+  const {
+    documents,
+    error,
+    isLoading,
+    getFolderUrl,
+    getDocumentUrl,
+    deleteDocument,
+    getDocumentsByType,
+  } = useGoogleDocs(accessToken)
 
-  const [formData, setFormData] = useState<ResumeData>(initialFormData)
-  const [title, setTitle] = useState('')
-  const [skillInput, setSkillInput] = useState('')
-  const [taskInput, setTaskInput] = useState<{[key: string]: string}>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [expandedExp, setExpandedExp] = useState<number | null>(0)
-  // 저장된 이력서가 없으면 폼을 바로 보여줌
-  const [showForm, setShowForm] = useState(() => {
-    const meta = localStorage.getItem('lifeops_resume_meta')
-    const savedResumes = meta ? JSON.parse(meta) : []
-    return savedResumes.length === 0
-  })
+  const resumeDoc = documents.find(d => d.type === 'resume')
+  const careerDoc = documents.find(d => d.type === 'career')
+  const projectDocs = getDocumentsByType('project')
 
-  // Personal Info handlers
-  const handlePersonalInfoChange = (field: keyof typeof formData.personalInfo, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      personalInfo: { ...prev.personalInfo, [field]: value }
-    }))
+  const handleDelete = async (id: string) => {
+    const doc = documents.find(d => d.id === id)
+    const typeName = doc ? DOC_CONFIG[doc.type].name : '문서'
+
+    if (!confirm(`${typeName}를 삭제하시겠습니까?\n\n※ Google Drive 휴지통으로 이동됩니다.`)) return
+
+    await deleteDocument(id)
   }
 
-  // Education handlers
-  const addEducation = () => {
-    setFormData(prev => ({
-      ...prev,
-      education: [...prev.education, { ...emptyEducation }]
-    }))
-  }
-
-  const removeEducation = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      education: prev.education.filter((_, i) => i !== index)
-    }))
-  }
-
-  const updateEducation = (index: number, field: keyof Education, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      education: prev.education.map((edu, i) =>
-        i === index ? { ...edu, [field]: value } : edu
-      )
-    }))
-  }
-
-  // Experience handlers
-  const addExperience = () => {
-    setFormData(prev => ({
-      ...prev,
-      experience: [...prev.experience, { ...emptyExperience, projects: [] }]
-    }))
-  }
-
-  const removeExperience = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.filter((_, i) => i !== index)
-    }))
-  }
-
-  const updateExperience = (index: number, field: keyof Experience, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.map((exp, i) =>
-        i === index ? { ...exp, [field]: value } : exp
-      )
-    }))
-  }
-
-  // Project handlers
-  const addProject = (expIndex: number) => {
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.map((exp, i) =>
-        i === expIndex ? { ...exp, projects: [...exp.projects, { ...emptyProject, tasks: [] }] } : exp
-      )
-    }))
-  }
-
-  const removeProject = (expIndex: number, projIndex: number) => {
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.map((exp, i) =>
-        i === expIndex ? { ...exp, projects: exp.projects.filter((_, j) => j !== projIndex) } : exp
-      )
-    }))
-  }
-
-  const updateProject = (expIndex: number, projIndex: number, field: keyof Project, value: string | string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.map((exp, i) =>
-        i === expIndex ? {
-          ...exp,
-          projects: exp.projects.map((proj, j) =>
-            j === projIndex ? { ...proj, [field]: value } : proj
-          )
-        } : exp
-      )
-    }))
-  }
-
-  const addTask = (expIndex: number, projIndex: number) => {
-    const key = `${expIndex}-${projIndex}`
-    const task = taskInput[key]?.trim()
-    if (!task) return
-
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.map((exp, i) =>
-        i === expIndex ? {
-          ...exp,
-          projects: exp.projects.map((proj, j) =>
-            j === projIndex ? { ...proj, tasks: [...proj.tasks, task] } : proj
-          )
-        } : exp
-      )
-    }))
-    setTaskInput(prev => ({ ...prev, [key]: '' }))
-  }
-
-  const removeTask = (expIndex: number, projIndex: number, taskIndex: number) => {
-    setFormData(prev => ({
-      ...prev,
-      experience: prev.experience.map((exp, i) =>
-        i === expIndex ? {
-          ...exp,
-          projects: exp.projects.map((proj, j) =>
-            j === projIndex ? { ...proj, tasks: proj.tasks.filter((_, k) => k !== taskIndex) } : proj
-          )
-        } : exp
-      )
-    }))
-  }
-
-  // Certification handlers
-  const addCertification = () => {
-    setFormData(prev => ({
-      ...prev,
-      certifications: [...prev.certifications, { ...emptyCertification }]
-    }))
-  }
-
-  const removeCertification = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      certifications: prev.certifications.filter((_, i) => i !== index)
-    }))
-  }
-
-  const updateCertification = (index: number, field: keyof Certification, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      certifications: prev.certifications.map((cert, i) =>
-        i === index ? { ...cert, [field]: value } : cert
-      )
-    }))
-  }
-
-  // Skills handlers
-  const addSkill = () => {
-    if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        skills: [...prev.skills, skillInput.trim()]
-      }))
-      setSkillInput('')
-    }
-  }
-
-  const removeSkill = (skill: string) => {
-    setFormData(prev => ({
-      ...prev,
-      skills: prev.skills.filter(s => s !== skill)
-    }))
-  }
-
-  // Submit handler
-  const handleSubmit = async () => {
-    if (!formData.personalInfo.name) {
-      alert('이름을 입력해주세요')
-      return
-    }
-
-    setIsSubmitting(true)
-    const documentId = await createResume(formData, title)
-    setIsSubmitting(false)
-
-    if (documentId) {
-      setShowForm(false)
-      window.open(getDocumentUrl(documentId), '_blank')
-    }
-  }
-
+  // 로그인 안된 상태
   if (!isSignedIn) {
     return (
       <div>
-        <PageHeader icon="📄" title="이력서" />
+        <PageHeader icon="📄" title="취업서류" />
         <div className="bg-gray-800 rounded-2xl p-8 text-center">
-          <p className="text-gray-400 mb-4">Google 계정으로 로그인하면 이력서를 생성할 수 있습니다</p>
+          <div className="text-4xl mb-4">📄</div>
+          <h3 className="text-white text-lg font-medium mb-2">취업서류 관리</h3>
+          <p className="text-gray-400 mb-6">
+            Google 계정으로 로그인하면<br />
+            이력서, 경력기술서, 프로젝트를 관리할 수 있습니다
+          </p>
           <button
             onClick={signIn}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors inline-flex items-center gap-2"
           >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
             Google 로그인
           </button>
         </div>
@@ -436,44 +298,19 @@ export default function ResumePage() {
 
   return (
     <div>
-      <PageHeader icon="📄" title="이력서">
-        <div className="flex items-center gap-2">
-          {/* 이력서 폴더 바로가기 */}
-          <a
-            href={getFolderUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-            title="이력서 폴더"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-            </svg>
-          </a>
-          {/* 마지막 이력서 열기 */}
-          {resumes.length > 0 && !showForm && (
-            <a
-              href={getDocumentUrl(resumes[resumes.length - 1].id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-1"
-              title="마지막으로 생성한 이력서 열기"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              최근 이력서
-            </a>
-          )}
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg font-medium transition-colors"
-            >
-              + 새 이력서 작성
-            </button>
-          )}
-        </div>
+      <PageHeader icon="📄" title="취업서류">
+        <a
+          href={getFolderUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+          title="취업서류 폴더 열기"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+          </svg>
+          <ExternalLinkIcon />
+        </a>
       </PageHeader>
 
       {error && (
@@ -482,405 +319,49 @@ export default function ResumePage() {
         </div>
       )}
 
-      {/* List View */}
-      {!showForm && (
-        <>
-          {resumes.length === 0 ? (
-            <div className="bg-gray-800 rounded-2xl p-8 text-center">
-              <div className="text-5xl mb-4">📄</div>
-              <p className="text-gray-400 mb-4">생성된 이력서가 없습니다</p>
-              <button
-                onClick={() => setShowForm(true)}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
-              >
-                첫 이력서 작성하기
-              </button>
-            </div>
-          ) : (
-            <div className="bg-gray-800 rounded-2xl p-4">
-              <h3 className="text-lg font-bold text-white mb-3">저장된 이력서 ({resumes.length})</h3>
-              <div className="space-y-2">
-                {resumes.map(resume => (
-                  <div key={resume.id} className="flex items-center justify-between bg-gray-700 rounded-xl p-4 hover:bg-gray-600/50 transition-colors">
-                    <Link to={`/resume/${resume.id}`} className="flex-1">
-                      <div className="text-white font-medium text-lg hover:text-blue-400 transition-colors">
-                        {resume.title}
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        {new Date(resume.createdAt).toLocaleDateString('ko-KR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </div>
-                    </Link>
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/resume/${resume.id}`}
-                        className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
-                      >
-                        상세보기
-                      </Link>
-                      <a
-                        href={getDocumentUrl(resume.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        Docs
-                      </a>
-                      <button
-                        onClick={() => deleteResume(resume.id)}
-                        className="px-3 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+      {isLoading && (
+        <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-4 mb-4">
+          <p className="text-blue-400">Google Drive와 동기화 중...</p>
+        </div>
       )}
 
-      {/* Resume Form */}
-      {showForm && (
-      <div className="bg-gray-800 rounded-2xl p-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white">새 이력서 작성</h3>
-          <button
-            onClick={() => setShowForm(false)}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            ✕ 닫기
-          </button>
+      <div className="bg-gray-800 rounded-2xl p-4">
+        {/* 폴더 구조 안내 */}
+        <div className="mb-4 p-3 bg-gray-700/30 rounded-lg">
+          <p className="text-gray-400 text-xs">
+            📁 Google Drive 폴더 구조: <span className="text-white">취업서류</span> &gt;
+            <span className="text-blue-400"> 이력서</span>,
+            <span className="text-green-400"> 경력기술서</span>,
+            <span className="text-orange-400"> 프로젝트</span>
+          </p>
         </div>
 
-        {/* Document Title */}
-        <div>
-          <label className="block text-gray-400 text-sm mb-2">문서 제목</label>
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="이력서_최대열"
-            className="w-full bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* 이력서 */}
+          <SingleDocCard
+            type="resume"
+            doc={resumeDoc}
+            onDelete={handleDelete}
+            getDocumentUrl={getDocumentUrl}
+          />
+
+          {/* 경력기술서 */}
+          <SingleDocCard
+            type="career"
+            doc={careerDoc}
+            onDelete={handleDelete}
+            getDocumentUrl={getDocumentUrl}
+          />
+
+          {/* 프로젝트 목록 */}
+          <ProjectListCard
+            projects={projectDocs}
+            onDelete={handleDelete}
+            getDocumentUrl={getDocumentUrl}
+            getFolderUrl={getFolderUrl}
           />
         </div>
-
-        {/* Personal Info */}
-        <div>
-          <h4 className="text-white font-medium mb-3">인적사항</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={formData.personalInfo.name}
-              onChange={e => handlePersonalInfoChange('name', e.target.value)}
-              placeholder="이름 *"
-              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="text"
-              value={formData.personalInfo.birthDate}
-              onChange={e => handlePersonalInfoChange('birthDate', e.target.value)}
-              placeholder="생년월일 (예: 1990.01.01)"
-              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="text"
-              value={formData.personalInfo.phone}
-              onChange={e => handlePersonalInfoChange('phone', e.target.value)}
-              placeholder="연락처"
-              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="email"
-              value={formData.personalInfo.email}
-              onChange={e => handlePersonalInfoChange('email', e.target.value)}
-              placeholder="이메일"
-              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="text"
-              value={formData.personalInfo.address}
-              onChange={e => handlePersonalInfoChange('address', e.target.value)}
-              placeholder="주소"
-              className="sm:col-span-2 bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="url"
-              value={formData.personalInfo.blog || ''}
-              onChange={e => handlePersonalInfoChange('blog', e.target.value)}
-              placeholder="블로그 (예: https://blog.example.com)"
-              className="sm:col-span-2 bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="url"
-              value={formData.personalInfo.github || ''}
-              onChange={e => handlePersonalInfoChange('github', e.target.value)}
-              placeholder="GitHub (예: https://github.com/username)"
-              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="url"
-              value={formData.personalInfo.portfolio || ''}
-              onChange={e => handlePersonalInfoChange('portfolio', e.target.value)}
-              placeholder="포트폴리오 URL"
-              className="bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Education */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white font-medium">학력</h4>
-            <button onClick={addEducation} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg">
-              + 추가
-            </button>
-          </div>
-          <div className="space-y-3">
-            {formData.education.map((edu, index) => (
-              <div key={index} className="bg-gray-700/50 rounded-xl p-3 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">학력 {index + 1}</span>
-                  {formData.education.length > 1 && (
-                    <button onClick={() => removeEducation(index)} className="text-red-400 hover:text-red-300 text-sm">삭제</button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input type="text" value={edu.school} onChange={e => updateEducation(index, 'school', e.target.value)} placeholder="학교명" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="text" value={edu.major} onChange={e => updateEducation(index, 'major', e.target.value)} placeholder="전공" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="text" value={edu.degree} onChange={e => updateEducation(index, 'degree', e.target.value)} placeholder="학위" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <div className="flex gap-2">
-                    <input type="text" value={edu.startDate} onChange={e => updateEducation(index, 'startDate', e.target.value)} placeholder="입학" className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <input type="text" value={edu.endDate} onChange={e => updateEducation(index, 'endDate', e.target.value)} placeholder="졸업" className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Experience with Projects */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white font-medium">경력 ({formData.experience.length}개)</h4>
-            <button onClick={addExperience} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg">
-              + 추가
-            </button>
-          </div>
-          <div className="space-y-3">
-            {formData.experience.map((exp, expIndex) => (
-              <div key={expIndex} className="bg-gray-700/50 rounded-xl overflow-hidden">
-                {/* Experience Header */}
-                <div
-                  className="p-3 cursor-pointer hover:bg-gray-700/70 flex items-center justify-between"
-                  onClick={() => setExpandedExp(expandedExp === expIndex ? null : expIndex)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{expandedExp === expIndex ? '▼' : '▶'}</span>
-                    <div>
-                      <div className="text-white font-medium">{exp.company || '회사명'}</div>
-                      <div className="text-gray-400 text-sm">{exp.position} | {exp.startDate} ~ {exp.endDate}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {exp.projects.length > 0 && (
-                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded">
-                        {exp.projects.length}개 프로젝트
-                      </span>
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeExperience(expIndex); }}
-                      className="text-red-400 hover:text-red-300 text-sm px-2"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-
-                {/* Expanded Content */}
-                {expandedExp === expIndex && (
-                  <div className="p-3 pt-0 space-y-4 border-t border-gray-600">
-                    {/* Basic Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3">
-                      <input type="text" value={exp.company} onChange={e => updateExperience(expIndex, 'company', e.target.value)} placeholder="회사명" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="text" value={exp.position} onChange={e => updateExperience(expIndex, 'position', e.target.value)} placeholder="직책" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="text" value={exp.startDate} onChange={e => updateExperience(expIndex, 'startDate', e.target.value)} placeholder="입사일" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="text" value={exp.endDate} onChange={e => updateExperience(expIndex, 'endDate', e.target.value)} placeholder="퇴사일" className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      <textarea
-                        value={exp.description}
-                        onChange={e => updateExperience(expIndex, 'description', e.target.value)}
-                        placeholder="간단한 설명 (프로젝트가 없는 경우)"
-                        className="sm:col-span-2 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        rows={2}
-                      />
-                    </div>
-
-                    {/* Projects */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-400 text-sm font-medium">프로젝트</span>
-                        <button
-                          onClick={() => addProject(expIndex)}
-                          className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs rounded"
-                        >
-                          + 프로젝트 추가
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        {exp.projects.map((proj, projIndex) => (
-                          <div key={projIndex} className="bg-gray-800 rounded-lg p-3 space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-blue-400 text-sm font-medium">프로젝트 {projIndex + 1}</span>
-                              <button onClick={() => removeProject(expIndex, projIndex)} className="text-red-400 hover:text-red-300 text-xs">삭제</button>
-                            </div>
-                            <input
-                              type="text"
-                              value={proj.name}
-                              onChange={e => updateProject(expIndex, projIndex, 'name', e.target.value)}
-                              placeholder="프로젝트명"
-                              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <textarea
-                              value={proj.summary}
-                              onChange={e => updateProject(expIndex, projIndex, 'summary', e.target.value)}
-                              placeholder="개요"
-                              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                              rows={2}
-                            />
-                            <input
-                              type="text"
-                              value={proj.role}
-                              onChange={e => updateProject(expIndex, projIndex, 'role', e.target.value)}
-                              placeholder="역할"
-                              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            {/* Tasks */}
-                            <div>
-                              <div className="text-gray-500 text-xs mb-1">주요 작업</div>
-                              <div className="space-y-1 mb-2">
-                                {proj.tasks.map((task, taskIndex) => (
-                                  <div key={taskIndex} className="flex items-center gap-2 bg-gray-700/50 rounded px-2 py-1">
-                                    <span className="text-gray-300 text-xs flex-1">• {task}</span>
-                                    <button onClick={() => removeTask(expIndex, projIndex, taskIndex)} className="text-red-400 text-xs">×</button>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={taskInput[`${expIndex}-${projIndex}`] || ''}
-                                  onChange={e => setTaskInput(prev => ({ ...prev, [`${expIndex}-${projIndex}`]: e.target.value }))}
-                                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTask(expIndex, projIndex))}
-                                  placeholder="작업 추가"
-                                  className="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                                <button onClick={() => addTask(expIndex, projIndex)} className="px-2 py-1 bg-gray-600 text-white text-xs rounded">추가</button>
-                              </div>
-                            </div>
-                            <input
-                              type="text"
-                              value={proj.techStack}
-                              onChange={e => updateProject(expIndex, projIndex, 'techStack', e.target.value)}
-                              placeholder="기술/환경"
-                              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <input
-                              type="text"
-                              value={proj.result}
-                              onChange={e => updateProject(expIndex, projIndex, 'result', e.target.value)}
-                              placeholder="결과"
-                              className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Certifications */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white font-medium">자격증</h4>
-            <button onClick={addCertification} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg">
-              + 추가
-            </button>
-          </div>
-          {formData.certifications.length === 0 ? (
-            <p className="text-gray-500 text-sm">자격증이 없으면 비워두세요</p>
-          ) : (
-            <div className="space-y-2">
-              {formData.certifications.map((cert, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input type="text" value={cert.name} onChange={e => updateCertification(index, 'name', e.target.value)} placeholder="자격증명" className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="text" value={cert.issuer} onChange={e => updateCertification(index, 'issuer', e.target.value)} placeholder="발급기관" className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="text" value={cert.date} onChange={e => updateCertification(index, 'date', e.target.value)} placeholder="취득일" className="w-24 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <button onClick={() => removeCertification(index)} className="text-red-400 hover:text-red-300 px-2">×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Skills */}
-        <div>
-          <h4 className="text-white font-medium mb-3">기술 스택</h4>
-          <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={skillInput}
-              onChange={e => setSkillInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-              placeholder="기술을 입력하고 Enter"
-              className="flex-1 bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button onClick={addSkill} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl">추가</button>
-          </div>
-          {formData.skills.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {formData.skills.map(skill => (
-                <span key={skill} className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg flex items-center gap-2">
-                  {skill}
-                  <button onClick={() => removeSkill(skill)} className="text-blue-300 hover:text-white">×</button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Self Introduction */}
-        <div>
-          <h4 className="text-white font-medium mb-3">자기소개</h4>
-          <textarea
-            value={formData.selfIntroduction}
-            onChange={e => setFormData(prev => ({ ...prev, selfIntroduction: e.target.value }))}
-            placeholder="자기소개를 작성해주세요"
-            rows={8}
-            className="w-full bg-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-        </div>
-
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading || isSubmitting}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-colors"
-        >
-          {isLoading || isSubmitting ? '생성 중...' : '이력서 생성'}
-        </button>
       </div>
-      )}
     </div>
   )
 }
