@@ -16,7 +16,7 @@ interface TaskList {
   title: string
 }
 
-export interface RoundItem {
+export interface RoutineItem {
   id: string
   label: string
   detail?: string
@@ -26,12 +26,12 @@ export interface RoundItem {
   taskId?: string
 }
 
-export interface Round {
+export interface Routine {
   id: string
   title: string
   emoji: string
   description?: string
-  items: RoundItem[]
+  items: RoutineItem[]
   isSuccess?: boolean
 }
 
@@ -39,47 +39,30 @@ function getTodayKey(): string {
   return new Date().toISOString().split('T')[0]
 }
 
-function getDefaultRounds(): Round[] {
+function getDefaultRoutines(): Routine[] {
   return [
     {
       id: 'round-0',
-      title: '워밍업',
+      title: '오늘의 루틴',
       emoji: '🌅',
-      description: '1분',
+      description: '하나씩 체크하며 오늘을 완성하자!',
       items: [
         { id: 'r0-1', label: '물 1컵', checked: false },
-      ]
-    },
-    {
-      id: 'round-1',
-      title: '최소치 3종 세트',
-      emoji: '🎯',
-      description: '여기까지만 해도 오늘 성공!',
-      isSuccess: true,
-      items: [
-        { id: 'r1-1', label: '(취업) 개발자 취업하기', detail: '공고 1개 찾기 → 링크 저장 + 요구사항 3줄', checked: false, actionUrl: '/apply', actionLabel: '지원관리' },
-        { id: 'r1-2', label: '(일본어) JLPT N2 자격증 취득', detail: '히라가나 10개 읽고 1번 쓰기', checked: false, actionUrl: '/japanese/hiragana', actionLabel: '히라가나' },
-        { id: 'r1-3', label: '(포폴) 실제 운영서비스 프로젝트', detail: '프로젝트 1개 4줄 (문제/한 일/기술/결과)', checked: false, actionUrl: '/portfolio', actionLabel: '포폴관리' },
-      ]
-    },
-    {
-      id: 'round-2',
-      title: '선택 블록 (60~90분)',
-      emoji: '🔥',
-      description: '아래 중 1개만 하면 성공!',
-      items: [
-        { id: 'r2-1', label: 'A) 지원/제출 블록', detail: '이력서에 키워드 3개 반영 + 지원동기 5문장 + 제출(또는 직전 저장)', checked: false, actionUrl: '/apply', actionLabel: '지원관리' },
-        { id: 'r2-2', label: 'B) JLPT N2 점수 블록', detail: '독해 1세트 + 오답 체크 + 맞은 개수/틀린 유형 3개 기록', checked: false, actionUrl: '/japanese', actionLabel: '일본어학습' },
-        { id: 'r2-3', label: 'C) 면접/코테 대비 블록', detail: '알고리즘 1문제 + 풀이 설명 5줄 → 깃헙/노션에 정리', checked: false },
-        { id: 'r2-4', label: 'D) 토익스피킹 블록', detail: '모의테스트 1세트 or 파트별 연습 3문제', checked: false },
+        { id: 'r0-2', label: '(스펙) 프로젝트 관리', detail: '프로젝트 문서 1개 정리', checked: false, actionUrl: '/portfolio', actionLabel: '프로젝트 관리' },
+        { id: 'r0-3', label: '(스펙) 일본어 JLPT 공부', detail: 'JLPT 강의 1개 > JLPT 책 10분 > 단어/문법 10개 암기', checked: false, actionUrl: '/japanese', actionLabel: '일본어' },
+        { id: 'r0-4', label: '(스펙) 토익스피킹 자격증 따기', detail: '토익스피킹 문제 풀이 or 모범답안 암기 or 실전 연습', checked: false },
+        { id: 'r0-5', label: '(취업) 취업루틴', detail: '공고 1개 체크 > 이력서 1줄 수정 > 포폴 1개 정리', checked: false, actionUrl: '/employment', actionLabel: '취업관리' },
+        { id: 'r0-6', label: '(딥워크) 취업 집중', detail: '이력서 수정 30분 or 자소서 작성 or 실제 지원 1개', checked: false, actionUrl: '/employment', actionLabel: '취업관리' },
+        { id: 'r0-7', label: '(딥워크) JLPT 집중', detail: 'JLPT 문제풀이 1세트 or 강의 30분 or 모의고사 1회', checked: false, actionUrl: '/japanese', actionLabel: '일본어' },
+        { id: 'r0-8', label: '(딥워크) 코딩/프로젝트', detail: '알고리즘 1문제 or 사이드 프로젝트 1시간 or TIL 작성', checked: false, actionUrl: '/portfolio', actionLabel: '프로젝트 관리' },
       ]
     },
   ]
 }
 
-export function useDailyRoundTasks() {
+export function useDailyRoutineTasks() {
   const { accessToken, isSignedIn, signIn } = useGoogleAuth()
-  const [rounds, setRounds] = useState<Round[]>(getDefaultRounds())
+  const [routines, setRoutines] = useState<Routine[]>(getDefaultRoutines())
   const [taskListId, setTaskListId] = useState<string | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -152,7 +135,7 @@ export function useDailyRoundTasks() {
   // 태스크 생성
   const createTask = useCallback(async (
     listId: string,
-    item: RoundItem,
+    item: RoutineItem,
     roundTitle: string
   ): Promise<string | null> => {
     if (!accessToken) return null
@@ -227,9 +210,9 @@ export function useDailyRoundTasks() {
 
       if (existingTasks.length > 0) {
         // Google Tasks에서 상태 가져오기
-        const updatedRounds = rounds.map(round => ({
-          ...round,
-          items: round.items.map(item => {
+        const updatedRoutines = routines.map(routine => ({
+          ...routine,
+          items: routine.items.map(item => {
             const matchingTask = existingTasks.find((task: GoogleTask) =>
               task.notes?.includes(`[itemId:${item.id}]`)
             )
@@ -243,19 +226,19 @@ export function useDailyRoundTasks() {
             return item
           })
         }))
-        setRounds(updatedRounds)
+        setRoutines(updatedRoutines)
       } else {
         // 새 태스크 생성
-        const updatedRounds: Round[] = []
-        for (const round of rounds) {
-          const updatedItems: RoundItem[] = []
-          for (const item of round.items) {
-            const taskId = await createTask(listId, item, round.title)
+        const updatedRoutines: Routine[] = []
+        for (const routine of routines) {
+          const updatedItems: RoutineItem[] = []
+          for (const item of routine.items) {
+            const taskId = await createTask(listId, item, routine.title)
             updatedItems.push({ ...item, taskId: taskId || undefined })
           }
-          updatedRounds.push({ ...round, items: updatedItems })
+          updatedRoutines.push({ ...routine, items: updatedItems })
         }
-        setRounds(updatedRounds)
+        setRoutines(updatedRoutines)
       }
 
       setLastSynced(new Date())
@@ -266,7 +249,7 @@ export function useDailyRoundTasks() {
 
     setIsSyncing(false)
     setIsLoading(false)
-  }, [accessToken, isSignedIn, rounds, getOrCreateTaskList, fetchTodayTasks, createTask, updateTaskStatus])
+  }, [accessToken, isSignedIn, routines, getOrCreateTaskList, fetchTodayTasks, createTask])
 
   // 항목 토글
   const toggleItem = useCallback(async (roundId: string, itemId: string) => {
@@ -278,8 +261,8 @@ export function useDailyRoundTasks() {
     // 이미 토글 중인 항목이 있으면 무시
     if (togglingItemId) return
 
-    const round = rounds.find(r => r.id === roundId)
-    const item = round?.items.find(i => i.id === itemId)
+    const routine = routines.find(r => r.id === roundId)
+    const item = routine?.items.find(i => i.id === itemId)
     if (!item) return
 
     const newChecked = !item.checked
@@ -297,7 +280,7 @@ export function useDailyRoundTasks() {
       }
 
       // 상태 업데이트
-      const updatedRounds = rounds.map(r => {
+      const updatedRoutines = routines.map(r => {
         if (r.id !== roundId) return r
         return {
           ...r,
@@ -307,14 +290,14 @@ export function useDailyRoundTasks() {
           })
         }
       })
-      setRounds(updatedRounds)
+      setRoutines(updatedRoutines)
 
       // 커스텀 이벤트 발생 (다른 컴포넌트 동기화용)
-      window.dispatchEvent(new CustomEvent('roundTaskUpdated', { detail: { itemId, checked: newChecked } }))
+      window.dispatchEvent(new CustomEvent('routineTaskUpdated', { detail: { itemId, checked: newChecked } }))
     } finally {
       setTogglingItemId(null)
     }
-  }, [rounds, taskListId, isSignedIn, togglingItemId, updateTaskStatus])
+  }, [routines, taskListId, isSignedIn, togglingItemId, updateTaskStatus])
 
   // 초기화
   const resetToday = useCallback(async () => {
@@ -325,7 +308,7 @@ export function useDailyRoundTasks() {
 
     if (!confirm('오늘 체크리스트를 초기화할까요?')) return
 
-    const defaultRounds = getDefaultRounds()
+    const defaultRoutines = getDefaultRoutines()
     setIsSyncing(true)
 
     // 기존 태스크 삭제
@@ -342,16 +325,16 @@ export function useDailyRoundTasks() {
     }
 
     // 새 태스크 생성
-    const newRounds: Round[] = []
-    for (const round of defaultRounds) {
-      const updatedItems: RoundItem[] = []
+    const newRoutines: Routine[] = []
+    for (const round of defaultRoutines) {
+      const updatedItems: RoutineItem[] = []
       for (const item of round.items) {
         const taskId = await createTask(taskListId, item, round.title)
         updatedItems.push({ ...item, taskId: taskId || undefined })
       }
-      newRounds.push({ ...round, items: updatedItems })
+      newRoutines.push({ ...round, items: updatedItems })
     }
-    setRounds(newRounds)
+    setRoutines(newRoutines)
     setIsSyncing(false)
   }, [taskListId, accessToken, isSignedIn, fetchTodayTasks, createTask])
 
@@ -365,7 +348,7 @@ export function useDailyRoundTasks() {
   }, [isSignedIn, accessToken, taskListId, syncWithGoogle])
 
   return {
-    rounds,
+    routines,
     isSyncing,
     isLoading,
     lastSynced,

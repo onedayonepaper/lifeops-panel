@@ -1,4 +1,4 @@
-// 라운드 태스크 완료 상태 관리 유틸리티
+// 루틴 태스크 완료 상태 관리 유틸리티
 // Google Tasks API를 통해 태스크 상태를 업데이트합니다
 
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1'
@@ -94,8 +94,8 @@ export async function markTaskComplete(itemId: string): Promise<boolean> {
     const success = await updateTaskStatus(accessToken, listId, task.id, true)
 
     if (success) {
-      // 커스텀 이벤트 발생 (DailyRoundCard가 리스닝할 수 있도록)
-      window.dispatchEvent(new CustomEvent('roundTaskUpdated', { detail: { itemId, checked: true } }))
+      // 커스텀 이벤트 발생 (DailyRoutineCard가 리스닝할 수 있도록)
+      window.dispatchEvent(new CustomEvent('routineTaskUpdated', { detail: { itemId, checked: true } }))
     }
 
     return success

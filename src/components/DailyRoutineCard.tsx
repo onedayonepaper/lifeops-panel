@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDailyRoundTasks } from '../hooks/useDailyRoundTasks'
+import { useDailyRoutineTasks } from '../hooks/useDailyRoutineTasks'
+import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
 
-export function DailyRoundCard() {
+export function DailyRoutineCard() {
   const {
-    rounds,
+    routines,
     isSyncing,
     isLoading,
     lastSynced,
@@ -15,11 +16,57 @@ export function DailyRoundCard() {
     resetToday,
     syncWithGoogle,
     togglingItemId
-  } = useDailyRoundTasks()
+  } = useDailyRoutineTasks()
 
   const navigate = useNavigate()
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [round2Expanded, setRound2Expanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
+  const { addBatchEvents } = useGoogleCalendar()
+
+  // Calculate progress
+  const todayRoutine = routines[0]
+  const isComplete = todayRoutine?.items.every(item => item.checked) ?? false
+  const checkedCount = todayRoutine ? todayRoutine.items.filter(i => i.checked).length : 0
+  const totalItems = todayRoutine?.items.length ?? 0
+
+  // 루틴을 캘린더에 추가
+  const addRoutineToCalendar = async () => {
+    if (!todayRoutine || isAddingToCalendar) return
+
+    setIsAddingToCalendar(true)
+
+    const today = new Date().toISOString().split('T')[0]
+
+    // 시간표 정의 (넉넉한 시간 배분)
+    const scheduleMap: Record<string, { start: string; end: string }> = {
+      'r0-1': { start: '09:00', end: '09:10' },      // 물 1컵 (10분)
+      'r0-2': { start: '09:10', end: '10:00' },      // 프로젝트 관리 (50분)
+      'r0-3': { start: '10:00', end: '11:00' },      // JLPT 공부 (1시간)
+      'r0-4': { start: '11:00', end: '12:00' },      // 토익스피킹 (1시간)
+      'r0-5': { start: '13:00', end: '14:00' },      // 취업루틴 (1시간, 점심 후)
+      'r0-6': { start: '14:00', end: '15:30' },      // 딥워크: 취업 집중 (1.5시간)
+      'r0-7': { start: '15:30', end: '17:00' },      // 딥워크: JLPT 집중 (1.5시간)
+      'r0-8': { start: '17:00', end: '18:30' },      // 딥워크: 코딩/프로젝트 (1.5시간)
+    }
+
+    const batchEvents = todayRoutine.items
+      .filter(item => scheduleMap[item.id])
+      .map(item => ({
+        title: `🎯 ${item.label}`,
+        startTime: scheduleMap[item.id].start,
+        endTime: scheduleMap[item.id].end,
+      }))
+
+    const result = await addBatchEvents(today, batchEvents)
+
+    setIsAddingToCalendar(false)
+
+    if (result.success > 0) {
+      alert(`${result.success}개 루틴이 캘린더에 추가되었습니다!`)
+    } else {
+      alert('캘린더 추가에 실패했습니다.')
+    }
+  }
 
   // 페이지에서 태스크 완료 이벤트 리스닝
   const handleTaskUpdated = useCallback(() => {
@@ -28,23 +75,14 @@ export function DailyRoundCard() {
   }, [syncWithGoogle])
 
   useEffect(() => {
-    window.addEventListener('roundTaskUpdated', handleTaskUpdated)
-    return () => window.removeEventListener('roundTaskUpdated', handleTaskUpdated)
+    window.addEventListener('routineTaskUpdated', handleTaskUpdated)
+    return () => window.removeEventListener('routineTaskUpdated', handleTaskUpdated)
   }, [handleTaskUpdated])
 
   // 항목 클릭 핸들러 - 항상 토글
   const handleItemClick = (roundId: string, itemId: string) => {
     toggleItem(roundId, itemId)
   }
-
-  // Calculate progress
-  const round1 = rounds.find(r => r.id === 'round-1')
-  const round1Complete = round1?.items.every(item => item.checked) ?? false
-  const round1Progress = round1 ? round1.items.filter(i => i.checked).length : 0
-  const round1Total = round1?.items.length ?? 0
-
-  const totalChecked = rounds.reduce((sum, r) => sum + r.items.filter(i => i.checked).length, 0)
-  const totalItems = rounds.reduce((sum, r) => sum + r.items.length, 0)
 
   // 로그인되지 않은 경우 로그인 버튼 표시
   if (!isSignedIn) {
@@ -98,16 +136,31 @@ export function DailyRoundCard() {
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
           <span className="text-xl">
-            {round1Complete ? '🏆' : '📋'}
+            {isComplete ? '🏆' : '📋'}
           </span>
           <span className="text-lg font-bold text-white">오늘 카드</span>
-          {round1Complete && (
+          {isComplete && (
             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
               오늘 성공!
             </span>
           )}
         </button>
         <div className="flex items-center gap-2">
+          {/* 캘린더에 추가 */}
+          {isSignedIn && (
+            <button
+              onClick={addRoutineToCalendar}
+              disabled={isAddingToCalendar}
+              className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
+                isAddingToCalendar ? 'text-green-400 animate-pulse' : 'text-gray-400 hover:text-white'
+              }`}
+              title="캘린더에 루틴 추가"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
+          )}
           {/* 동기화 상태 */}
           {isSignedIn && (
             <button
@@ -124,7 +177,7 @@ export function DailyRoundCard() {
             </button>
           )}
           <span className="text-xs text-gray-500">
-            {totalChecked}/{totalItems}
+            {checkedCount}/{totalItems}
           </span>
           <button
             onClick={resetToday}
@@ -173,192 +226,166 @@ export function DailyRoundCard() {
       {/* Rules reminder */}
       <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
         <div className="text-xs text-purple-300">
-          <span className="font-medium">규칙:</span> 시계 금지, 타이머만, 라운드1만 끝나도 성공
+          <span className="font-medium">규칙:</span> 시계 금지, 타이머만
         </div>
       </div>
 
-      {/* Round 1 Progress (always visible) */}
+      {/* Progress */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-          <span>오늘 성공 기준 (라운드1)</span>
-          <span className={round1Complete ? 'text-green-400' : ''}>{round1Progress}/{round1Total}</span>
+          <span>오늘의 진행률</span>
+          <span className={isComplete ? 'text-green-400' : ''}>{checkedCount}/{totalItems}</span>
         </div>
         <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              round1Complete
+              isComplete
                 ? 'bg-gradient-to-r from-green-500 to-emerald-400'
                 : 'bg-gradient-to-r from-blue-500 to-purple-500'
             }`}
-            style={{ width: `${round1Total > 0 ? (round1Progress / round1Total) * 100 : 0}%` }}
+            style={{ width: `${totalItems > 0 ? (checkedCount / totalItems) * 100 : 0}%` }}
           />
         </div>
       </div>
 
-      {/* Rounds */}
-      {isExpanded && (
+      {/* Routine */}
+      {isExpanded && todayRoutine && (
         <div className="space-y-4">
-          {rounds.map((round, roundIndex) => {
-            const roundComplete = round.items.every(item => item.checked)
-            const roundProgress = round.items.filter(i => i.checked).length
-            const isRound2 = round.id === 'round-2'
-            const isRoundCollapsed = isRound2 && !round2Expanded
-
-            return (
-              <div
-                key={round.id}
-                className={`rounded-xl p-3 transition-all ${
-                  round.isSuccess
-                    ? roundComplete
-                      ? 'bg-green-500/10 border border-green-500/30'
-                      : 'bg-blue-500/10 border border-blue-500/30'
-                    : 'bg-gray-700/30'
-                }`}
-              >
-                {/* Round Header */}
-                <div
-                  className={`flex items-center justify-between ${isRoundCollapsed ? '' : 'mb-2'} ${isRound2 ? 'cursor-pointer' : ''}`}
-                  onClick={isRound2 ? () => setRound2Expanded(!round2Expanded) : undefined}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{round.emoji}</span>
-                    <span className={`font-medium ${
-                      round.isSuccess ? 'text-blue-300' : 'text-gray-300'
-                    }`}>
-                      라운드 {roundIndex}) {round.title}
-                    </span>
-                    {roundComplete && (
-                      <span className="text-green-400">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">
-                      {roundProgress}/{round.items.length}
-                    </span>
-                    {isRound2 && (
-                      <svg className={`w-4 h-4 text-gray-500 transition-transform ${round2Expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-
-                {!isRoundCollapsed && round.description && (
-                  <div className={`text-xs mb-2 ${
-                    round.isSuccess ? 'text-green-400/80' : 'text-gray-500'
-                  }`}>
-                    {round.description}
-                  </div>
-                )}
-
-                {/* Items */}
-                {!isRoundCollapsed && <div className="space-y-1.5">
-                  {round.items.map(item => {
-                    const hasInternalPage = item.actionUrl && !item.actionUrl.startsWith('http')
-                    const hasExternalLink = item.actionUrl && item.actionUrl.startsWith('http')
-                    const isToggling = togglingItemId === item.id
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
-                          isToggling
-                            ? 'bg-blue-500/10 opacity-70'
-                            : item.checked
-                              ? 'bg-green-500/10'
-                              : 'hover:bg-gray-700/50'
-                        }`}
-                      >
-                        {/* 항목 전체 클릭 영역 */}
-                        <button
-                          onClick={() => handleItemClick(round.id, item.id)}
-                          disabled={isToggling}
-                          className={`flex items-start gap-2 flex-1 text-left ${isToggling ? 'cursor-wait' : ''}`}
-                        >
-                          <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
-                            isToggling
-                              ? 'border-blue-400 bg-blue-500/20'
-                              : item.checked
-                                ? 'bg-green-500 border-green-500'
-                                : 'border-gray-500 hover:border-gray-400'
-                          }`}>
-                            {isToggling ? (
-                              <svg className="w-3 h-3 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            ) : item.checked ? (
-                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : null}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-sm font-medium ${
-                              item.checked
-                                ? 'text-green-400 line-through opacity-70'
-                                : 'text-white'
-                            }`}>
-                              {item.label}
-                            </div>
-                            {item.detail && (
-                              <div className={`text-xs mt-0.5 ${
-                                item.checked ? 'text-gray-500 line-through' : 'text-gray-400'
-                              }`}>
-                                {item.detail}
-                              </div>
-                            )}
-                          </div>
-                        </button>
-
-                        {/* 내부 페이지 링크 버튼 - 체크 여부와 관계없이 항상 표시 */}
-                        {hasInternalPage && (
-                          <button
-                            onClick={() => navigate(item.actionUrl!)}
-                            className={`flex-shrink-0 px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
-                              item.checked
-                                ? 'bg-green-500/20 text-white hover:bg-green-500/30'
-                                : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-white'
-                            }`}
-                          >
-                            {item.actionLabel || '이동'}
-                          </button>
-                        )}
-
-                        {/* 외부 링크 버튼 */}
-                        {hasExternalLink && !item.checked && (
-                          <a
-                            href={item.actionUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-shrink-0 px-2 py-1 text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors flex items-center gap-1"
-                          >
-                            <span>{item.actionLabel || '시작'}</span>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </a>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>}
-
-                {/* Success message for round 1 */}
-                {!isRoundCollapsed && round.isSuccess && roundComplete && (
-                  <div className="mt-3 p-2 bg-green-500/20 rounded-lg text-center">
-                    <span className="text-green-400 text-sm font-medium">
-                      오늘 끝! 여기서 쉬어도 됨
-                    </span>
-                  </div>
+          <div
+            className={`rounded-xl p-3 transition-all ${
+              isComplete
+                ? 'bg-green-500/10 border border-green-500/30'
+                : 'bg-gray-700/30'
+            }`}
+          >
+            {/* Routine Header */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{todayRoutine.emoji}</span>
+                <span className="font-medium text-gray-300">
+                  {todayRoutine.title}
+                </span>
+                {isComplete && (
+                  <span className="text-green-400">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </span>
                 )}
               </div>
-            )
-          })}
+              <span className="text-xs text-gray-500">
+                {checkedCount}/{totalItems}
+              </span>
+            </div>
+
+            {todayRoutine.description && (
+              <div className="text-xs mb-2 text-gray-500">
+                {todayRoutine.description}
+              </div>
+            )}
+
+            {/* Items */}
+            <div className="space-y-1.5">
+              {todayRoutine.items.map(item => {
+                const hasInternalPage = item.actionUrl && !item.actionUrl.startsWith('http')
+                const hasExternalLink = item.actionUrl && item.actionUrl.startsWith('http')
+                const isToggling = togglingItemId === item.id
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
+                      isToggling
+                        ? 'bg-blue-500/10 opacity-70'
+                        : item.checked
+                          ? 'bg-green-500/10'
+                          : 'hover:bg-gray-700/50'
+                    }`}
+                  >
+                    {/* 항목 전체 클릭 영역 */}
+                    <button
+                      onClick={() => handleItemClick(todayRoutine.id, item.id)}
+                      disabled={isToggling}
+                      className={`flex items-start gap-2 flex-1 text-left ${isToggling ? 'cursor-wait' : ''}`}
+                    >
+                      <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
+                        isToggling
+                          ? 'border-blue-400 bg-blue-500/20'
+                          : item.checked
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-500 hover:border-gray-400'
+                      }`}>
+                        {isToggling ? (
+                          <svg className="w-3 h-3 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : item.checked ? (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : null}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-medium ${
+                          item.checked
+                            ? 'text-green-400 line-through opacity-70'
+                            : 'text-white'
+                        }`}>
+                          {item.label}
+                        </div>
+                        {item.detail && (
+                          <div className={`text-xs mt-0.5 ${
+                            item.checked ? 'text-gray-500 line-through' : 'text-gray-400'
+                          }`}>
+                            {item.detail}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* 내부 페이지 링크 버튼 - 체크 여부와 관계없이 항상 표시 */}
+                    {hasInternalPage && (
+                      <button
+                        onClick={() => navigate(item.actionUrl!)}
+                        className={`flex-shrink-0 px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+                          item.checked
+                            ? 'bg-green-500/20 text-white hover:bg-green-500/30'
+                            : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-white'
+                        }`}
+                      >
+                        {item.actionLabel || '이동'}
+                      </button>
+                    )}
+
+                    {/* 외부 링크 버튼 */}
+                    {hasExternalLink && !item.checked && (
+                      <a
+                        href={item.actionUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 px-2 py-1 text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors flex items-center gap-1"
+                      >
+                        <span>{item.actionLabel || '시작'}</span>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Success message */}
+            {isComplete && (
+              <div className="mt-3 p-2 bg-green-500/20 rounded-lg text-center">
+                <span className="text-green-400 text-sm font-medium">
+                  오늘 끝! 🎉
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* End section */}
           <div className="rounded-xl p-3 bg-gray-700/30">
