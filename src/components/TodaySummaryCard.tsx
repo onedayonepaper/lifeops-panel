@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
 import type { CalendarEvent } from '../hooks/useGoogleCalendar'
 import { CalendarCard } from './CalendarCard'
@@ -6,6 +6,15 @@ import { CalendarCard } from './CalendarCard'
 export function TodaySummaryCard() {
   const { events } = useGoogleCalendar()
   const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [, setTick] = useState(0)
+
+  // 매 분마다 리렌더링하여 진행률 자동 업데이트
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1)
+    }, 60000) // 1분마다
+    return () => clearInterval(interval)
+  }, [])
 
   const todayStats = useMemo(() => {
     const now = new Date()
@@ -13,9 +22,15 @@ export function TodaySummaryCard() {
       return e.start.toDateString() === now.toDateString()
     })
 
-    const completed = todayEvents.filter((e: CalendarEvent) =>
-      e.title?.startsWith('✓') || e.title?.startsWith('✅')
-    ).length
+    // 시간이 지난 일정은 자동으로 완료 처리 (종일 일정 제외)
+    const completed = todayEvents.filter((e: CalendarEvent) => {
+      // 수동으로 완료 표시한 경우
+      if (e.title?.startsWith('✓') || e.title?.startsWith('✅')) return true
+      // 종일 일정은 하루 끝날 때까지 미완료
+      if (e.isAllDay) return false
+      // 시간 일정은 종료 시간이 지나면 완료
+      return e.end < now
+    }).length
 
     // Find current or next event
     let currentEvent: CalendarEvent | null = null
