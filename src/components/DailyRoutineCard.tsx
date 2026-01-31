@@ -37,16 +37,12 @@ export function DailyRoutineCard() {
 
     const today = new Date().toISOString().split('T')[0]
 
-    // 시간표 정의 (넉넉한 시간 배분)
+    // 시간표 정의
     const scheduleMap: Record<string, { start: string; end: string }> = {
-      'r0-1': { start: '09:00', end: '09:10' },      // 물 1컵 (10분)
-      'r0-2': { start: '09:10', end: '10:00' },      // 프로젝트 관리 (50분)
+      'r0-2': { start: '09:00', end: '10:00' },      // 프로젝트 관리 (1시간)
       'r0-3': { start: '10:00', end: '11:00' },      // JLPT 공부 (1시간)
       'r0-4': { start: '11:00', end: '12:00' },      // 토익스피킹 (1시간)
       'r0-5': { start: '13:00', end: '14:00' },      // 취업루틴 (1시간, 점심 후)
-      'r0-6': { start: '14:00', end: '15:30' },      // 딥워크: 취업 집중 (1.5시간)
-      'r0-7': { start: '15:30', end: '17:00' },      // 딥워크: JLPT 집중 (1.5시간)
-      'r0-8': { start: '17:00', end: '18:30' },      // 딥워크: 코딩/프로젝트 (1.5시간)
     }
 
     const batchEvents = todayRoutine.items

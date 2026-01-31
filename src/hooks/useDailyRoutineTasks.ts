@@ -47,14 +47,10 @@ function getDefaultRoutines(): Routine[] {
       emoji: '🌅',
       description: '하나씩 체크하며 오늘을 완성하자!',
       items: [
-        { id: 'r0-1', label: '물 1컵', checked: false },
         { id: 'r0-2', label: '(스펙) 프로젝트 관리', detail: '프로젝트 문서 1개 정리', checked: false, actionUrl: '/portfolio', actionLabel: '프로젝트 관리' },
         { id: 'r0-3', label: '(스펙) 일본어 JLPT 공부', detail: 'JLPT 강의 1개 > JLPT 책 10분 > 단어/문법 10개 암기', checked: false, actionUrl: '/japanese', actionLabel: '일본어' },
         { id: 'r0-4', label: '(스펙) 토익스피킹 자격증 따기', detail: '토익스피킹 문제 풀이 or 모범답안 암기 or 실전 연습', checked: false },
         { id: 'r0-5', label: '(취업) 취업루틴', detail: '공고 1개 체크 > 이력서 1줄 수정 > 포폴 1개 정리', checked: false, actionUrl: '/employment', actionLabel: '취업관리' },
-        { id: 'r0-6', label: '(딥워크) 취업 집중', detail: '이력서 수정 30분 or 자소서 작성 or 실제 지원 1개', checked: false, actionUrl: '/employment', actionLabel: '취업관리' },
-        { id: 'r0-7', label: '(딥워크) JLPT 집중', detail: 'JLPT 문제풀이 1세트 or 강의 30분 or 모의고사 1회', checked: false, actionUrl: '/japanese', actionLabel: '일본어' },
-        { id: 'r0-8', label: '(딥워크) 코딩/프로젝트', detail: '알고리즘 1문제 or 사이드 프로젝트 1시간 or TIL 작성', checked: false, actionUrl: '/portfolio', actionLabel: '프로젝트 관리' },
       ]
     },
   ]
