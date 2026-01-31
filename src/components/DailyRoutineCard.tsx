@@ -382,18 +382,6 @@ export function DailyRoutineCard() {
               </div>
             )}
           </div>
-
-          {/* End section */}
-          <div className="rounded-xl p-3 bg-gray-700/30">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">🌙</span>
-              <span className="font-medium text-gray-300">종료 (2분)</span>
-            </div>
-            <div className="text-xs text-gray-500 space-y-1">
-              <div>- 저장/커밋 확인</div>
-              <div>- 내일 할 일 1줄만 적기</div>
-            </div>
-          </div>
         </div>
       )}
     </div>
