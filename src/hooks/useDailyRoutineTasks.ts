@@ -45,7 +45,7 @@ function getDefaultRoutines(): Routine[] {
       id: 'round-0',
       title: '오늘의 루틴',
       emoji: '🌅',
-      description: '하나씩 체크하며 오늘을 완성하자!',
+      description: '오늘 할 일 목록',
       items: [
         { id: 'r0-2', label: '(스펙) 프로젝트 관리', detail: '프로젝트 문서 1개 정리', checked: false, actionUrl: '/portfolio', actionLabel: '프로젝트 관리' },
         { id: 'r0-3', label: '(스펙) 일본어 JLPT 공부', detail: 'JLPT 강의 1개 > JLPT 책 10분 > 단어/문법 10개 암기', checked: false, actionUrl: '/japanese', actionLabel: '일본어' },
@@ -343,6 +343,64 @@ export function useDailyRoutineTasks() {
     }
   }, [isSignedIn, accessToken, taskListId, syncWithGoogle])
 
+  // 항목 추가
+  const addItem = useCallback(async (label: string, detail?: string) => {
+    if (!label.trim()) return
+
+    const newItem: RoutineItem = {
+      id: `r0-${Date.now()}`,
+      label: label.trim(),
+      detail: detail?.trim(),
+      checked: false
+    }
+
+    // Google Tasks에 추가
+    if (isSignedIn && taskListId) {
+      const taskId = await createTask(taskListId, newItem, '오늘의 루틴')
+      newItem.taskId = taskId || undefined
+    }
+
+    // 상태 업데이트
+    setRoutines(prev => prev.map(routine => {
+      if (routine.id === 'round-0') {
+        return {
+          ...routine,
+          items: [...routine.items, newItem]
+        }
+      }
+      return routine
+    }))
+  }, [isSignedIn, taskListId, createTask])
+
+  // 항목 삭제
+  const removeItem = useCallback(async (itemId: string) => {
+    const routine = routines.find(r => r.id === 'round-0')
+    const item = routine?.items.find(i => i.id === itemId)
+
+    // Google Tasks에서 삭제
+    if (item?.taskId && taskListId && accessToken) {
+      try {
+        await fetch(`${TASKS_API}/lists/${taskListId}/tasks/${item.taskId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+      } catch {
+        // 무시
+      }
+    }
+
+    // 상태 업데이트
+    setRoutines(prev => prev.map(routine => {
+      if (routine.id === 'round-0') {
+        return {
+          ...routine,
+          items: routine.items.filter(i => i.id !== itemId)
+        }
+      }
+      return routine
+    }))
+  }, [routines, taskListId, accessToken])
+
   return {
     routines,
     isSyncing,
@@ -354,6 +412,8 @@ export function useDailyRoutineTasks() {
     toggleItem,
     resetToday,
     syncWithGoogle,
-    togglingItemId
+    togglingItemId,
+    addItem,
+    removeItem
   }
 }

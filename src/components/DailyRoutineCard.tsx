@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDailyRoutineTasks } from '../hooks/useDailyRoutineTasks'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
@@ -6,27 +6,21 @@ import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
 export function DailyRoutineCard() {
   const {
     routines,
-    isSyncing,
     isLoading,
-    lastSynced,
-    error,
     isSignedIn,
     signIn,
-    toggleItem,
-    resetToday,
-    syncWithGoogle,
-    togglingItemId
+    addItem,
+    removeItem,
   } = useDailyRoutineTasks()
 
   const navigate = useNavigate()
   const [isExpanded, setIsExpanded] = useState(true)
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
+  const [showAddInput, setShowAddInput] = useState(false)
+  const [newItemLabel, setNewItemLabel] = useState('')
   const { addBatchEvents } = useGoogleCalendar()
 
-  // Calculate progress
   const todayRoutine = routines[0]
-  const isComplete = todayRoutine?.items.every(item => item.checked) ?? false
-  const checkedCount = todayRoutine ? todayRoutine.items.filter(i => i.checked).length : 0
   const totalItems = todayRoutine?.items.length ?? 0
 
   // 루틴을 캘린더에 추가
@@ -62,22 +56,6 @@ export function DailyRoutineCard() {
     } else {
       alert('캘린더 추가에 실패했습니다.')
     }
-  }
-
-  // 페이지에서 태스크 완료 이벤트 리스닝
-  const handleTaskUpdated = useCallback(() => {
-    // Google Tasks에서 다시 동기화
-    syncWithGoogle()
-  }, [syncWithGoogle])
-
-  useEffect(() => {
-    window.addEventListener('routineTaskUpdated', handleTaskUpdated)
-    return () => window.removeEventListener('routineTaskUpdated', handleTaskUpdated)
-  }, [handleTaskUpdated])
-
-  // 항목 클릭 핸들러 - 항상 토글
-  const handleItemClick = (roundId: string, itemId: string) => {
-    toggleItem(roundId, itemId)
   }
 
   // 로그인되지 않은 경우 로그인 버튼 표시
@@ -131,17 +109,24 @@ export function DailyRoutineCard() {
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <span className="text-xl">
-            {isComplete ? '🏆' : '📋'}
-          </span>
+          <span className="text-xl">📋</span>
           <span className="text-lg font-bold text-white">오늘 카드</span>
-          {isComplete && (
-            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-              오늘 성공!
-            </span>
-          )}
         </button>
         <div className="flex items-center gap-2">
+          {/* 항목 추가 */}
+          {isSignedIn && (
+            <button
+              onClick={() => setShowAddInput(!showAddInput)}
+              className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
+                showAddInput ? 'text-blue-400' : 'text-gray-400 hover:text-white'
+              }`}
+              title="항목 추가"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          )}
           {/* 캘린더에 추가 */}
           {isSignedIn && (
             <button
@@ -157,33 +142,7 @@ export function DailyRoutineCard() {
               </svg>
             </button>
           )}
-          {/* 동기화 상태 */}
-          {isSignedIn && (
-            <button
-              onClick={syncWithGoogle}
-              disabled={isSyncing}
-              className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
-                isSyncing ? 'text-blue-400 animate-pulse' : 'text-gray-400 hover:text-white'
-              }`}
-              title={lastSynced ? `마지막 동기화: ${lastSynced.toLocaleTimeString()}` : 'Google Tasks 동기화'}
-            >
-              <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          )}
-          <span className="text-xs text-gray-500">
-            {checkedCount}/{totalItems}
-          </span>
-          <button
-            onClick={resetToday}
-            className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-            title="초기화"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          <span className="text-xs text-gray-500">{totalItems}개</span>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
@@ -195,143 +154,89 @@ export function DailyRoutineCard() {
         </div>
       </div>
 
-      {/* Error message */}
-      {error && (
-        <div className="mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <div className="text-xs text-red-400">{error}</div>
-        </div>
-      )}
-
-      {/* Progress */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-          <span>오늘의 진행률</span>
-          <span className={isComplete ? 'text-green-400' : ''}>{checkedCount}/{totalItems}</span>
-        </div>
-        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              isComplete
-                ? 'bg-gradient-to-r from-green-500 to-emerald-400'
-                : 'bg-gradient-to-r from-blue-500 to-purple-500'
-            }`}
-            style={{ width: `${totalItems > 0 ? (checkedCount / totalItems) * 100 : 0}%` }}
-          />
-        </div>
-      </div>
-
       {/* Routine */}
       {isExpanded && todayRoutine && (
         <div className="space-y-4">
-          <div
-            className={`rounded-xl p-3 transition-all ${
-              isComplete
-                ? 'bg-green-500/10 border border-green-500/30'
-                : 'bg-gray-700/30'
-            }`}
-          >
+          <div className="rounded-xl p-3 bg-gray-700/30">
             {/* Routine Header */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{todayRoutine.emoji}</span>
-                <span className="font-medium text-gray-300">
-                  {todayRoutine.title}
-                </span>
-                {isComplete && (
-                  <span className="text-green-400">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-gray-500">
-                {checkedCount}/{totalItems}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{todayRoutine.emoji}</span>
+              <span className="font-medium text-gray-300">
+                {todayRoutine.title}
               </span>
             </div>
 
-            {todayRoutine.description && (
-              <div className="text-xs mb-2 text-gray-500">
-                {todayRoutine.description}
+            {/* 항목 추가 입력 */}
+            {showAddInput && (
+              <div className="mb-3 flex gap-2">
+                <input
+                  type="text"
+                  value={newItemLabel}
+                  onChange={(e) => setNewItemLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newItemLabel.trim()) {
+                      addItem(newItemLabel)
+                      setNewItemLabel('')
+                      setShowAddInput(false)
+                    } else if (e.key === 'Escape') {
+                      setShowAddInput(false)
+                      setNewItemLabel('')
+                    }
+                  }}
+                  placeholder="새 항목 입력 (Enter로 추가)"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    if (newItemLabel.trim()) {
+                      addItem(newItemLabel)
+                      setNewItemLabel('')
+                      setShowAddInput(false)
+                    }
+                  }}
+                  className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
+                >
+                  추가
+                </button>
               </div>
             )}
 
-            {/* Items */}
+            {/* Items - 단순 리스트 */}
             <div className="space-y-1.5">
               {todayRoutine.items.map(item => {
                 const hasInternalPage = item.actionUrl && !item.actionUrl.startsWith('http')
                 const hasExternalLink = item.actionUrl && item.actionUrl.startsWith('http')
-                const isToggling = togglingItemId === item.id
 
                 return (
                   <div
                     key={item.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
-                      isToggling
-                        ? 'bg-blue-500/10 opacity-70'
-                        : item.checked
-                          ? 'bg-green-500/10'
-                          : 'hover:bg-gray-700/50'
-                    }`}
+                    className="group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700/50 transition-all"
                   >
-                    {/* 항목 전체 클릭 영역 */}
-                    <button
-                      onClick={() => handleItemClick(todayRoutine.id, item.id)}
-                      disabled={isToggling}
-                      className={`flex items-start gap-2 flex-1 text-left ${isToggling ? 'cursor-wait' : ''}`}
-                    >
-                      <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
-                        isToggling
-                          ? 'border-blue-400 bg-blue-500/20'
-                          : item.checked
-                            ? 'bg-green-500 border-green-500'
-                            : 'border-gray-500 hover:border-gray-400'
-                      }`}>
-                        {isToggling ? (
-                          <svg className="w-3 h-3 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        ) : item.checked ? (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : null}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-medium ${
-                          item.checked
-                            ? 'text-green-400 line-through opacity-70'
-                            : 'text-white'
-                        }`}>
-                          {item.label}
-                        </div>
-                        {item.detail && (
-                          <div className={`text-xs mt-0.5 ${
-                            item.checked ? 'text-gray-500 line-through' : 'text-gray-400'
-                          }`}>
-                            {item.detail}
-                          </div>
-                        )}
+                    <span className="text-blue-400">•</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">
+                        {item.label}
                       </div>
-                    </button>
+                      {item.detail && (
+                        <div className="text-xs mt-0.5 text-gray-400">
+                          {item.detail}
+                        </div>
+                      )}
+                    </div>
 
-                    {/* 내부 페이지 링크 버튼 - 체크 여부와 관계없이 항상 표시 */}
+                    {/* 내부 페이지 링크 버튼 */}
                     {hasInternalPage && (
                       <button
                         onClick={() => navigate(item.actionUrl!)}
-                        className={`flex-shrink-0 px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
-                          item.checked
-                            ? 'bg-green-500/20 text-white hover:bg-green-500/30'
-                            : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-white'
-                        }`}
+                        className="flex-shrink-0 px-2 py-1 text-xs font-medium rounded-lg transition-colors bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-white"
                       >
                         {item.actionLabel || '이동'}
                       </button>
                     )}
 
                     {/* 외부 링크 버튼 */}
-                    {hasExternalLink && !item.checked && (
+                    {hasExternalLink && (
                       <a
                         href={item.actionUrl}
                         target="_blank"
@@ -344,19 +249,21 @@ export function DailyRoutineCard() {
                         </svg>
                       </a>
                     )}
+
+                    {/* 삭제 버튼 */}
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all"
+                      title="삭제"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
                 )
               })}
             </div>
-
-            {/* Success message */}
-            {isComplete && (
-              <div className="mt-3 p-2 bg-green-500/20 rounded-lg text-center">
-                <span className="text-green-400 text-sm font-medium">
-                  오늘 끝! 🎉
-                </span>
-              </div>
-            )}
           </div>
         </div>
       )}
