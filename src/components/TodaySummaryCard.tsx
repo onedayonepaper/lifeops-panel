@@ -1,11 +1,9 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
 import type { CalendarEvent } from '../hooks/useGoogleCalendar'
-import { CalendarCard } from './CalendarCard'
 
 export function TodaySummaryCard() {
   const { events } = useGoogleCalendar()
-  const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [, setTick] = useState(0)
 
   // 매 분마다 리렌더링하여 진행률 자동 업데이트
@@ -132,11 +130,7 @@ export function TodaySummaryCard() {
   const progressDisplay = getProgressDisplay()
 
   return (
-    <>
-      <button
-        onClick={() => setShowCalendarModal(true)}
-        className="w-full text-left bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20 border border-blue-500/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg h-full hover:from-blue-600/30 hover:via-purple-600/30 hover:to-pink-600/30 transition-all cursor-pointer"
-      >
+    <div className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20 border border-blue-500/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg h-full">
         {/* Greeting & Progress */}
         <div className="flex items-center justify-between mb-2">
           <div>
@@ -213,29 +207,6 @@ export function TodaySummaryCard() {
             </div>
           )}
         </div>
-      </button>
-
-      {/* Calendar Modal */}
-      {showCalendarModal && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={(e) => e.target === e.currentTarget && setShowCalendarModal(false)}
-        >
-          <div className="w-full max-w-lg max-h-[80vh] overflow-auto">
-            <div className="relative">
-              <button
-                onClick={() => setShowCalendarModal(false)}
-                className="absolute -top-2 -right-2 z-10 p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 shadow-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <CalendarCard />
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   )
 }
