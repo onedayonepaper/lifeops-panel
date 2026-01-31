@@ -202,30 +202,6 @@ export function DailyRoutineCard() {
         </div>
       )}
 
-      {/* Sync status indicator */}
-      {isSignedIn && (
-        <div className="mb-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between">
-          <div className="text-xs text-blue-300 flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span>Google Tasks 연동됨</span>
-          </div>
-          {lastSynced && (
-            <span className="text-xs text-gray-500">
-              {lastSynced.toLocaleTimeString()}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Rules reminder */}
-      <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-        <div className="text-xs text-purple-300">
-          <span className="font-medium">규칙:</span> 시계 금지, 타이머만
-        </div>
-      </div>
-
       {/* Progress */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
