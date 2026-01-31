@@ -19,7 +19,7 @@ export function DailyRoutineCard() {
   } = useDailyRoutineTasks()
 
   const navigate = useNavigate()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
   const { addBatchEvents } = useGoogleCalendar()
 
