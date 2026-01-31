@@ -5,6 +5,7 @@ import type { CalendarEvent } from '../hooks/useGoogleCalendar'
 export function TodaySummaryCard() {
   const { events } = useGoogleCalendar()
   const [, setTick] = useState(0)
+  const [showAllEvents, setShowAllEvents] = useState(false)
 
   // 매 분마다 리렌더링하여 진행률 자동 업데이트
   useEffect(() => {
@@ -42,12 +43,16 @@ export function TodaySummaryCard() {
       }
     }
 
+    // 시간순 정렬
+    const sortedEvents = [...todayEvents].sort((a, b) => a.start.getTime() - b.start.getTime())
+
     return {
       total: todayEvents.length,
       completed,
       progress: todayEvents.length > 0 ? Math.round((completed / todayEvents.length) * 100) : 0,
       currentEvent,
       nextEvent,
+      allEvents: sortedEvents,
     }
   }, [events])
 
@@ -61,6 +66,16 @@ export function TodaySummaryCard() {
     const hours = Math.floor(minutes / 60)
     const mins = minutes % 60
     return mins > 0 ? `${hours}시간 ${mins}분 후` : `${hours}시간 후`
+  }
+
+  const formatEventTime = (event: CalendarEvent) => {
+    if (event.isAllDay) return '종일'
+    return event.start.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
+  const isEventPast = (event: CalendarEvent) => {
+    if (event.isAllDay) return false
+    return event.end < new Date()
   }
 
   const getGreetingAndTip = () => {
@@ -137,9 +152,22 @@ export function TodaySummaryCard() {
             <h2 className="text-base sm:text-lg font-bold text-white">{greeting}</h2>
             <p className={`text-xs sm:text-sm ${tipColor}`}>{tip}</p>
           </div>
-          <div className="text-right">
-            <div className="text-2xl sm:text-3xl font-bold text-white">{progressDisplay.text}</div>
-            <div className="text-xs text-gray-400">{progressDisplay.subtext}</div>
+          <div className="flex items-center gap-2">
+            {todayStats.total > 0 && (
+              <button
+                onClick={() => setShowAllEvents(!showAllEvents)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+                title="전체 일정 보기"
+              >
+                <svg className={`w-5 h-5 transition-transform ${showAllEvents ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            )}
+            <div className="text-right">
+              <div className="text-2xl sm:text-3xl font-bold text-white">{progressDisplay.text}</div>
+              <div className="text-xs text-gray-400">{progressDisplay.subtext}</div>
+            </div>
           </div>
         </div>
 
@@ -207,6 +235,34 @@ export function TodaySummaryCard() {
             </div>
           )}
         </div>
+
+        {/* 전체 일정 드롭다운 */}
+        {showAllEvents && todayStats.allEvents.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
+            <div className="text-xs text-gray-400 mb-2">📅 오늘 전체 일정</div>
+            {todayStats.allEvents.map((event) => {
+              const isPast = isEventPast(event)
+              const isCompleted = event.title?.startsWith('✅')
+              return (
+                <div
+                  key={event.id}
+                  className={`flex items-center gap-2 p-2 rounded-lg ${
+                    isPast || isCompleted ? 'opacity-50' : 'bg-white/5'
+                  }`}
+                >
+                  <span className={`text-xs font-mono ${isPast || isCompleted ? 'text-gray-500' : 'text-gray-300'}`}>
+                    {formatEventTime(event)}
+                  </span>
+                  <span className={`flex-1 text-sm truncate ${
+                    isPast || isCompleted ? 'text-gray-500 line-through' : 'text-white'
+                  }`}>
+                    {event.title?.replace(/^[✓✅]\s*/, '')}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
     </div>
   )
 }
