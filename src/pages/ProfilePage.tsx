@@ -73,6 +73,7 @@ export default function ProfilePage() {
               </h3>
               <ul className="text-gray-300 space-y-2">
                 <li>• 일정/할 일은 <strong className="text-white">심플해야</strong> 하고, 복잡해지면 포기하고 싶은 경향(너도 인정한 부분).</li>
+                <li>• <strong className="text-white">압박감을 느끼면 포기하는 성향</strong>이 있음 → 스스로 압박을 줄이는 환경 설계 필요.</li>
                 <li>• 그래서 "프로젝트도 단순한 MVP 1개"가 제일 잘 맞음.</li>
               </ul>
             </div>
