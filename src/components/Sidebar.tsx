@@ -55,7 +55,7 @@ interface SidebarProps {
 
 export function Sidebar({ isNightMode }: SidebarProps) {
   const location = useLocation()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['커리어'])
 
