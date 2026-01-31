@@ -111,9 +111,6 @@ export default function PortfolioPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               💼 프로젝트 관리
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              목표: 실제 운영서비스 프로젝트
-            </p>
           </div>
           <Link
             to="/"
