@@ -24,7 +24,7 @@ const navItems: NavEntry[] = [
   {
     label: '플랜',
     icon: '📋',
-    path: '/calendar',
+    path: '/plan',
     children: [
       { path: '/today', label: '오늘 카드', icon: '🌅' },
       { path: '/calendar', label: '캘린더', icon: '📅' },
@@ -36,10 +36,10 @@ const navItems: NavEntry[] = [
   {
     label: '커리어',
     icon: '🚀',
-    path: '/employment',
+    path: '/career',
     children: [
       { path: '/profile', label: '프로필', icon: '🧠' },
-      { path: '/portfolio', label: '프로젝트 관리', icon: '💼' },
+      { path: '/portfolio', label: '포트폴리오', icon: '💼' },
       { path: '/resume', label: '취업서류', icon: '📄' },
       { path: '/apply', label: '지원', icon: '📝' },
       { path: '/company', label: '회사', icon: '🏢' },

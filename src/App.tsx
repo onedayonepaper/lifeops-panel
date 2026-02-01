@@ -21,6 +21,7 @@ import { ClockPage } from './pages/ClockPage'
 import JapanesePage from './pages/JapanesePage'
 import HiraganaPracticePage from './pages/HiraganaPracticePage'
 import PortfolioPage from './pages/PortfolioPage'
+import PortfolioDetailPage from './pages/PortfolioDetailPage'
 import ProjectInputPage from './pages/ProjectInputPage'
 import ResumePage from './pages/ResumePage'
 import ResumeDetailPage from './pages/ResumeDetailPage'
@@ -30,6 +31,8 @@ import CareerEditPage from './pages/CareerEditPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
 import ProjectEditPage from './pages/ProjectEditPage'
 import ProfilePage from './pages/ProfilePage'
+import PlanPage from './pages/PlanPage'
+import CareerPage from './pages/CareerPage'
 import PublicSectorITPage from './pages/PublicSectorITPage'
 import JobDocumentsPage from './pages/JobDocumentsPage'
 
@@ -106,10 +109,12 @@ function App() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/today" element={<HomePage />} />
+        <Route path="/plan" element={<PlanPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/bucket-list" element={<BucketListPage />} />
         <Route path="/study-journal" element={<StudyJournalPage />} />
+        <Route path="/career" element={<CareerPage />} />
         <Route path="/employment" element={<EmploymentPage />} />
         <Route path="/apply" element={<ApplyPage />} />
         <Route path="/company" element={<CompanyPage />} />
@@ -117,6 +122,7 @@ function App() {
         <Route path="/japanese/hiragana" element={<HiraganaPracticePage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
         <Route path="/portfolio/new" element={<ProjectInputPage />} />
+        <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />
         <Route path="/resume" element={<ResumePage />} />
         <Route path="/resume/edit/new" element={<ResumeEditPage />} />
         <Route path="/resume/:id" element={<ResumeDetailPage />} />

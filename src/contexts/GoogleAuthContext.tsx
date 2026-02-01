@@ -57,6 +57,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
   const [tokenClient, setTokenClient] = useState<any>(null)
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRefreshingRef = useRef<boolean>(false)
+  const userEmailRef = useRef<string | null>(localStorage.getItem('google_user_email'))
 
   // Clear refresh timer
   const clearRefreshTimer = useCallback(() => {
@@ -66,21 +67,34 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Schedule token refresh (silent only, no popup)
-  const scheduleTokenRefresh = useCallback((expiresIn: number, _client: any) => {
+  // Attempt silent token refresh
+  const attemptSilentRefresh = useCallback((client: any) => {
+    if (isRefreshingRef.current) return
+    isRefreshingRef.current = true
+
+    console.log('[Auth] Attempting silent token refresh...')
+
+    // Try to get a new token without user interaction
+    const hint = userEmailRef.current
+    client.requestAccessToken({
+      prompt: '', // Empty string = silent refresh attempt
+      hint: hint || undefined
+    })
+  }, [])
+
+  // Schedule token refresh (tries silent first)
+  const scheduleTokenRefresh = useCallback((expiresIn: number, client: any) => {
     clearRefreshTimer()
 
-    // Calculate when to check (5 minutes before expiry)
+    // Calculate when to refresh (5 minutes before expiry)
     const refreshTime = Math.max((expiresIn * 1000) - TOKEN_REFRESH_MARGIN, 60000) // At least 1 minute
 
-    console.log(`[Auth] Token check scheduled in ${Math.round(refreshTime / 60000)} minutes`)
+    console.log(`[Auth] Token refresh scheduled in ${Math.round(refreshTime / 60000)} minutes`)
 
-    refreshTimerRef.current = setTimeout(async () => {
-      // Just log that token is expiring - don't auto-popup
-      // User will be prompted to sign in again when they try to use a feature
-      console.log('[Auth] Token expiring soon. User may need to sign in again.')
+    refreshTimerRef.current = setTimeout(() => {
+      attemptSilentRefresh(client)
     }, refreshTime)
-  }, [clearRefreshTimer])
+  }, [clearRefreshTimer, attemptSilentRefresh])
 
   // Verify token is valid
   const verifyToken = useCallback(async (token: string): Promise<boolean> => {
@@ -107,7 +121,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
         const client = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
           scope: SCOPES,
-          callback: (response: any) => {
+          callback: async (response: any) => {
             isRefreshingRef.current = false
 
             if (response.access_token) {
@@ -119,43 +133,73 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
               const expiryTime = Date.now() + (expiresIn * 1000)
               localStorage.setItem('google_calendar_token_expiry', expiryTime.toString())
 
+              // Fetch and store user email for silent refresh
+              try {
+                const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                  headers: { Authorization: `Bearer ${response.access_token}` }
+                })
+                if (userInfoResponse.ok) {
+                  const userInfo = await userInfoResponse.json()
+                  if (userInfo.email) {
+                    localStorage.setItem('google_user_email', userInfo.email)
+                    userEmailRef.current = userInfo.email
+                  }
+                }
+              } catch (e) {
+                console.log('[Auth] Could not fetch user info')
+              }
+
               setAccessToken(response.access_token)
               setIsSignedIn(true)
               setIsLoading(false)
+
+              console.log('[Auth] Token refreshed successfully')
 
               // Schedule next refresh
               scheduleTokenRefresh(expiresIn, client)
             } else if (response.error) {
               console.error('[Auth] Token error:', response.error)
+              // If silent refresh failed, don't clear existing token
+              // User can still use the app until they try an API call
+              if (response.error === 'interaction_required' || response.error === 'consent_required') {
+                console.log('[Auth] Silent refresh failed, user interaction needed')
+              }
               setIsLoading(false)
             }
           }
         })
         setTokenClient(client)
 
-        // Check existing token
+        // Check existing token - trust localStorage if not expired
         if (accessToken) {
-          const isValid = await verifyToken(accessToken)
-          if (isValid) {
+          const expiryTime = parseInt(localStorage.getItem('google_calendar_token_expiry') || '0')
+          const timeUntilExpiry = expiryTime - Date.now()
+
+          // If token hasn't expired yet, trust it without verification
+          if (timeUntilExpiry > 0) {
             setIsSignedIn(true)
             setIsLoading(false)
 
-            // Check if we need to refresh soon
-            const expiryTime = parseInt(localStorage.getItem('google_calendar_token_expiry') || '0')
-            const timeUntilExpiry = expiryTime - Date.now()
-
             if (timeUntilExpiry > TOKEN_REFRESH_MARGIN) {
-              // Token still valid, schedule refresh
               scheduleTokenRefresh(Math.floor(timeUntilExpiry / 1000), client)
             }
-            // Don't auto-refresh with popup - let user manually re-login when needed
           } else {
-            // Token invalid - clear it but don't popup
-            localStorage.removeItem('google_calendar_token')
-            localStorage.removeItem('google_calendar_token_expiry')
-            setAccessToken(null)
-            setIsLoading(false)
-            // User will need to manually sign in again
+            // Token expired - verify if it's still somehow valid
+            const isValid = await verifyToken(accessToken)
+            if (isValid) {
+              // Token still works, update expiry (assume 1 hour)
+              const newExpiryTime = Date.now() + (3600 * 1000)
+              localStorage.setItem('google_calendar_token_expiry', newExpiryTime.toString())
+              setIsSignedIn(true)
+              setIsLoading(false)
+              scheduleTokenRefresh(3600, client)
+            } else {
+              // Token truly invalid - clear it
+              localStorage.removeItem('google_calendar_token')
+              localStorage.removeItem('google_calendar_token_expiry')
+              setAccessToken(null)
+              setIsLoading(false)
+            }
           }
         } else {
           setIsLoading(false)
@@ -171,24 +215,17 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Check token validity when window gains focus (but don't popup)
+  // Check token validity when window gains focus and attempt silent refresh if needed
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && isSignedIn && accessToken) {
+      if (document.visibilityState === 'visible' && isSignedIn && accessToken && tokenClient) {
         const expiryTime = parseInt(localStorage.getItem('google_calendar_token_expiry') || '0')
         const timeUntilExpiry = expiryTime - Date.now()
 
-        // If token expired, verify it's still valid
-        if (timeUntilExpiry <= 0) {
-          const isValid = await verifyToken(accessToken)
-          if (!isValid) {
-            // Token expired - clear state, user will need to sign in manually
-            console.log('[Auth] Token expired, please sign in again')
-            localStorage.removeItem('google_calendar_token')
-            localStorage.removeItem('google_calendar_token_expiry')
-            setAccessToken(null)
-            setIsSignedIn(false)
-          }
+        // If token expired or expiring soon, attempt silent refresh
+        if (timeUntilExpiry < TOKEN_REFRESH_MARGIN) {
+          console.log('[Auth] Token expired or expiring soon, attempting refresh...')
+          attemptSilentRefresh(tokenClient)
         }
       }
     }
@@ -197,7 +234,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [isSignedIn, accessToken, verifyToken])
+  }, [isSignedIn, accessToken, tokenClient, attemptSilentRefresh])
 
   const signIn = useCallback(() => {
     if (tokenClient) {
@@ -210,6 +247,8 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('google_calendar_token')
     localStorage.removeItem('google_calendar_token_expiry')
     localStorage.removeItem('google_calendar_has_logged_in')
+    localStorage.removeItem('google_user_email')
+    userEmailRef.current = null
     setAccessToken(null)
     setIsSignedIn(false)
   }, [clearRefreshTimer])

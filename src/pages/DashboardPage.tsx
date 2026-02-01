@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast'
 import { requestNotificationPermission } from '../utils/notifications'
 import { TodaySummaryCard } from '../components/TodaySummaryCard'
 import { DailyRoutineCard } from '../components/DailyRoutineCard'
+import { TodayTasksCard } from '../components/TodayTasksCard'
 import { PageHeader } from '../components/PageHeader'
 
 export function DashboardPage() {
@@ -30,6 +31,9 @@ export function DashboardPage() {
       <div className="space-y-2 sm:space-y-3">
         {/* 오늘 요약 - 클릭하면 캘린더 모달 */}
         <TodaySummaryCard />
+
+        {/* 오늘 할일 */}
+        <TodayTasksCard />
 
         {/* 오늘 카드 */}
         <DailyRoutineCard />
