@@ -245,7 +245,7 @@ export function LifeAnchorsPage() {
 
   return (
     <div>
-      <PageHeader icon="🔔" title="생활 앵커">
+      <PageHeader icon="🔔" title="반복 일정">
         {isSignedIn && (
           <>
             <button
@@ -282,7 +282,7 @@ export function LifeAnchorsPage() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">💡</span>
             <div>
-              <h3 className="font-medium text-blue-300 mb-1">생활 앵커란?</h3>
+              <h3 className="font-medium text-blue-300 mb-1">반복 일정이란?</h3>
               <p className="text-sm text-gray-400">
                 시간표 대신 하루의 리듬을 잡아주는 핵심 알림입니다.
                 기상, 물, 건강기능식품, 취침 준비 등 매일 반복되는 생활 알림을 Google Calendar에 등록합니다.

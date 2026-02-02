@@ -47,7 +47,6 @@ function getDefaultRoutines(): Routine[] {
       emoji: '🌅',
       description: '오늘 할 일 목록',
       items: [
-        { id: 'r0-2', label: '(스펙) 프로젝트 관리', detail: '프로젝트 문서 1개 정리', checked: false, actionUrl: '/portfolio', actionLabel: '프로젝트 관리' },
         { id: 'r0-3', label: '(스펙) 일본어 JLPT 공부', detail: 'JLPT 강의 1개 > JLPT 책 10분 > 단어/문법 10개 암기', checked: false, actionUrl: '/japanese', actionLabel: '일본어' },
         { id: 'r0-4', label: '(스펙) 토익스피킹 자격증 따기', detail: '토익스피킹 문제 풀이 or 모범답안 암기 or 실전 연습', checked: false },
         { id: 'r0-5', label: '(취업) 취업루틴', detail: '공고 1개 체크 > 이력서 1줄 수정 > 포폴 1개 정리', checked: false, actionUrl: '/employment', actionLabel: '취업관리' },

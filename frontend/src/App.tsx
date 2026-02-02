@@ -35,6 +35,8 @@ import PlanPage from './pages/PlanPage'
 import CareerPage from './pages/CareerPage'
 import PublicSectorITPage from './pages/PublicSectorITPage'
 import JobDocumentsPage from './pages/JobDocumentsPage'
+import HouseFindingPage from './pages/HouseFindingPage'
+import ApiKeysPage from './pages/ApiKeysPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
@@ -137,6 +139,8 @@ function App() {
         <Route path="/job-documents" element={<JobDocumentsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/life-anchors" element={<LifeAnchorsPage />} />
+        <Route path="/house-finding" element={<HouseFindingPage />} />
+        <Route path="/api-keys" element={<ApiKeysPage />} />
         <Route path="/clock" element={<ClockPage />} />
       </Routes>
     </Layout>

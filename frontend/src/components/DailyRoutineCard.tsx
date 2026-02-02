@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useDailyRoutineTasks } from '../hooks/useDailyRoutineTasks'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
 
@@ -13,11 +12,20 @@ export function DailyRoutineCard() {
     removeItem,
   } = useDailyRoutineTasks()
 
-  const navigate = useNavigate()
   const [isExpanded, setIsExpanded] = useState(true)
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
   const [showAddInput, setShowAddInput] = useState(false)
   const [newItemLabel, setNewItemLabel] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  // 데이터 복사
+  const copyToClipboard = async () => {
+    if (!todayRoutine) return
+    const text = todayRoutine.items.map(item => `• ${item.label}`).join('\n')
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
   const { addBatchEvents } = useGoogleCalendar()
 
   const todayRoutine = routines[0]
@@ -127,6 +135,22 @@ export function DailyRoutineCard() {
               </svg>
             </button>
           )}
+          {/* 복사 */}
+          <button
+            onClick={copyToClipboard}
+            className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
+              copied ? 'text-green-400' : 'text-gray-400 hover:text-white'
+            }`}
+            title="목록 복사"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {copied ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              )}
+            </svg>
+          </button>
           {/* 캘린더에 추가 */}
           {isSignedIn && (
             <button
@@ -204,11 +228,7 @@ export function DailyRoutineCard() {
 
             {/* Items - 단순 리스트 */}
             <div className="space-y-1.5">
-              {todayRoutine.items.map(item => {
-                const hasInternalPage = item.actionUrl && !item.actionUrl.startsWith('http')
-                const hasExternalLink = item.actionUrl && item.actionUrl.startsWith('http')
-
-                return (
+              {todayRoutine.items.map(item => (
                   <div
                     key={item.id}
                     className="group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700/50 transition-all"
@@ -218,37 +238,7 @@ export function DailyRoutineCard() {
                       <div className="text-sm font-medium text-white">
                         {item.label}
                       </div>
-                      {item.detail && (
-                        <div className="text-xs mt-0.5 text-gray-400">
-                          {item.detail}
-                        </div>
-                      )}
                     </div>
-
-                    {/* 내부 페이지 링크 버튼 */}
-                    {hasInternalPage && (
-                      <button
-                        onClick={() => navigate(item.actionUrl!)}
-                        className="flex-shrink-0 px-2 py-1 text-xs font-medium rounded-lg transition-colors bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-white"
-                      >
-                        {item.actionLabel || '이동'}
-                      </button>
-                    )}
-
-                    {/* 외부 링크 버튼 */}
-                    {hasExternalLink && (
-                      <a
-                        href={item.actionUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-shrink-0 px-2 py-1 text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <span>{item.actionLabel || '시작'}</span>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    )}
 
                     {/* 삭제 버튼 */}
                     <button
@@ -261,8 +251,7 @@ export function DailyRoutineCard() {
                       </svg>
                     </button>
                   </div>
-                )
-              })}
+                ))}
             </div>
           </div>
         </div>

@@ -29,14 +29,14 @@ export function DashboardPage() {
       <PageHeader icon="📊" title="대시보드" />
 
       <div className="space-y-2 sm:space-y-3">
-        {/* 오늘 요약 - 클릭하면 캘린더 모달 */}
-        <TodaySummaryCard />
+        {/* 오늘 요약 - 일단 숨김 */}
+        {/* <TodaySummaryCard /> */}
 
-        {/* 오늘 할일 */}
-        <TodayTasksCard />
-
-        {/* 오늘 카드 */}
-        <DailyRoutineCard />
+        {/* 오늘 카드 (왼쪽) + 할일 (오른쪽) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+          <DailyRoutineCard />
+          <TodayTasksCard />
+        </div>
       </div>
     </div>
   )

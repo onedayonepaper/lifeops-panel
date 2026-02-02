@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useGoogleAuth } from '../contexts/GoogleAuthContext'
+import { api } from '../lib/api'
 
 export interface CalendarEvent {
   id: string
@@ -54,14 +55,16 @@ function parseEvent(event: any): CalendarEvent {
 }
 
 export function useGoogleCalendar() {
-  const { isSignedIn, isLoading: authLoading, accessToken, signIn, signOut } = useGoogleAuth()
+  const { isSignedIn, isLoading: authLoading, signIn, signOut } = useGoogleAuth()
 
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch events from Google Calendar API
-  const fetchEvents = useCallback(async (token: string, startDate?: Date, endDate?: Date) => {
+  // Fetch events from backend API
+  const fetchEvents = useCallback(async (startDate?: Date, endDate?: Date) => {
+    if (!isSignedIn) return
+
     try {
       setIsLoading(true)
       setError(null)
@@ -74,50 +77,36 @@ export function useGoogleCalendar() {
         ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() + 1)
         : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7)
 
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
-        `timeMin=${startOfDay.toISOString()}&` +
-        `timeMax=${endOfDay.toISOString()}&` +
-        `singleEvents=true&` +
-        `orderBy=startTime&` +
-        `maxResults=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
+      const items = await api.getCalendarEvents({
+        timeMin: startOfDay.toISOString(),
+        timeMax: endOfDay.toISOString(),
+        maxResults: 100
+      })
 
-      if (response.status === 401) {
+      setEvents(items.map(parseEvent))
+    } catch (err) {
+      if (err instanceof Error && err.message === 'Unauthorized') {
         signOut()
         return
       }
-
-      if (!response.ok) {
-        throw new Error('캘린더 정보를 가져올 수 없습니다')
-      }
-
-      const data = await response.json()
-      setEvents((data.items || []).map(parseEvent))
-    } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다')
     } finally {
       setIsLoading(false)
     }
-  }, [signOut])
+  }, [isSignedIn, signOut])
 
   // Fetch events when signed in
   useEffect(() => {
-    if (isSignedIn && accessToken) {
-      fetchEvents(accessToken)
+    if (isSignedIn) {
+      fetchEvents()
     } else {
       setEvents([])
     }
-  }, [isSignedIn, accessToken, fetchEvents])
+  }, [isSignedIn, fetchEvents])
 
   // Add event to Google Calendar
   const addEvent = useCallback(async (eventData: NewEventData): Promise<boolean> => {
-    if (!accessToken) return false
+    if (!isSignedIn) return false
 
     try {
       const event: any = {
@@ -141,38 +130,21 @@ export function useGoogleCalendar() {
         }
       }
 
-      const response = await fetch(
-        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(event)
-        }
-      )
-
-      if (response.status === 401) {
-        signOut()
-        return false
-      }
-
-      if (!response.ok) {
-        throw new Error('이벤트를 추가할 수 없습니다')
-      }
-
-      await fetchEvents(accessToken)
+      await api.createCalendarEvent(event)
+      await fetchEvents()
       return true
     } catch (err) {
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        signOut()
+      }
       console.error('Failed to add event:', err)
       return false
     }
-  }, [accessToken, fetchEvents, signOut])
+  }, [isSignedIn, fetchEvents, signOut])
 
   // Batch add events
   const addBatchEvents = useCallback(async (date: string, batchEvents: BatchEventData[]): Promise<{ success: number; failed: number }> => {
-    if (!accessToken) return { success: 0, failed: batchEvents.length }
+    if (!isSignedIn) return { success: 0, failed: batchEvents.length }
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     let success = 0
@@ -199,35 +171,20 @@ export function useGoogleCalendar() {
           }
         }
 
-        const response = await fetch(
-          'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(event)
-          }
-        )
-
-        if (response.ok) {
-          success++
-        } else {
-          failed++
-        }
+        await api.createCalendarEvent(event)
+        success++
       } catch {
         failed++
       }
     }
 
-    await fetchEvents(accessToken)
+    await fetchEvents()
     return { success, failed }
-  }, [accessToken, fetchEvents])
+  }, [isSignedIn, fetchEvents])
 
   // Toggle event complete status
   const toggleEventComplete = useCallback(async (eventId: string, currentTitle: string): Promise<boolean> => {
-    if (!accessToken) return false
+    if (!isSignedIn) return false
 
     try {
       const isCompleted = currentTitle.startsWith('✅ ')
@@ -235,66 +192,38 @@ export function useGoogleCalendar() {
         ? currentTitle.replace('✅ ', '')
         : `✅ ${currentTitle}`
 
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ summary: newTitle })
-        }
-      )
-
-      if (response.status === 401) {
-        signOut()
-        return false
-      }
-
-      if (!response.ok) return false
-
-      await fetchEvents(accessToken)
+      await api.updateCalendarEvent(eventId, { summary: newTitle })
+      await fetchEvents()
       return true
     } catch (err) {
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        signOut()
+      }
       console.error('Failed to toggle event:', err)
       return false
     }
-  }, [accessToken, fetchEvents, signOut])
+  }, [isSignedIn, fetchEvents, signOut])
 
   // Delete event
   const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
-    if (!accessToken) return false
+    if (!isSignedIn) return false
 
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }
-      )
-
-      if (response.status === 401) {
-        signOut()
-        return false
-      }
-
-      if (!response.ok && response.status !== 204) return false
-
-      await fetchEvents(accessToken)
+      await api.deleteCalendarEvent(eventId)
+      await fetchEvents()
       return true
     } catch (err) {
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        signOut()
+      }
       console.error('Failed to delete event:', err)
       return false
     }
-  }, [accessToken, fetchEvents, signOut])
+  }, [isSignedIn, fetchEvents, signOut])
 
   // Update event
   const updateEvent = useCallback(async (eventId: string, data: UpdateEventData): Promise<boolean> => {
-    if (!accessToken) return false
+    if (!isSignedIn) return false
 
     try {
       const event: any = {}
@@ -322,38 +251,21 @@ export function useGoogleCalendar() {
         }
       }
 
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(event)
-        }
-      )
-
-      if (response.status === 401) {
-        signOut()
-        return false
-      }
-
-      if (!response.ok) return false
-
-      await fetchEvents(accessToken)
+      await api.updateCalendarEvent(eventId, event)
+      await fetchEvents()
       return true
     } catch (err) {
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        signOut()
+      }
       console.error('Failed to update event:', err)
       return false
     }
-  }, [accessToken, fetchEvents, signOut])
+  }, [isSignedIn, fetchEvents, signOut])
 
   const refresh = useCallback((startDate?: Date, endDate?: Date) => {
-    if (accessToken) {
-      fetchEvents(accessToken, startDate, endDate)
-    }
-  }, [accessToken, fetchEvents])
+    fetchEvents(startDate, endDate)
+  }, [fetchEvents])
 
   return {
     events,
@@ -367,7 +279,6 @@ export function useGoogleCalendar() {
     addBatchEvents,
     toggleEventComplete,
     deleteEvent,
-    updateEvent,
-    accessToken
+    updateEvent
   }
 }

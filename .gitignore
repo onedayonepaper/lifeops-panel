@@ -7,12 +7,23 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+
+# Backend
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/tokens.json
+
+# Environment
 .env
 .env.local
+frontend/.env
+backend/.env
 
 # Editor directories and files
 .vscode/*
@@ -27,3 +38,6 @@ dist-ssr
 
 # Playwright MCP screenshots and temp files
 .playwright-mcp/
+
+# Vite cache
+.vite/

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
+import { useGoogleAuth } from '../contexts/GoogleAuthContext'
+import { api } from '../lib/api'
 
 const SPREADSHEET_ID_KEY = 'lifeops_spreadsheet_id'
 const SHEET_NAME = 'DailyLog'
@@ -19,13 +21,15 @@ interface GoogleSheetsState {
   isInitialized: boolean
 }
 
-export function useGoogleSheets(accessToken: string | null): GoogleSheetsState & {
+export function useGoogleSheets(): GoogleSheetsState & {
   initializeSheet: () => Promise<boolean>
   addEntry: (entry: Omit<DailyLogEntry, 'date'>) => Promise<boolean>
   updateEntry: (date: string, entry: Partial<Omit<DailyLogEntry, 'date'>>) => Promise<boolean>
   getTodayEntry: () => DailyLogEntry | null
   refresh: () => void
 } {
+  const { isSignedIn } = useGoogleAuth()
+
   const [state, setState] = useState<GoogleSheetsState>({
     entries: [],
     isLoading: false,
@@ -35,18 +39,9 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
   })
 
   // Check if spreadsheet exists and has correct structure
-  const verifySpreadsheet = useCallback(async (token: string, sheetId: string): Promise<boolean> => {
+  const verifySpreadsheet = useCallback(async (sheetId: string): Promise<boolean> => {
     try {
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties.title`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
-
-      if (!response.ok) return false
-
-      const data = await response.json()
+      const data = await api.getSpreadsheet(sheetId, 'sheets.properties.title')
       const hasSheet = data.sheets?.some((s: any) => s.properties?.title === SHEET_NAME)
       return hasSheet
     } catch {
@@ -55,48 +50,23 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
   }, [])
 
   // Create new spreadsheet with DailyLog sheet
-  const createSpreadsheet = useCallback(async (token: string): Promise<string | null> => {
+  const createSpreadsheet = useCallback(async (): Promise<string | null> => {
     try {
-      const response = await fetch(
-        'https://sheets.googleapis.com/v4/spreadsheets',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            properties: {
-              title: 'LifeOps Daily Log'
-            },
-            sheets: [{
-              properties: {
-                title: SHEET_NAME
-              }
-            }]
-          })
-        }
-      )
+      const data = await api.createSpreadsheet({
+        properties: {
+          title: 'LifeOps Daily Log'
+        },
+        sheets: [{
+          properties: {
+            title: SHEET_NAME
+          }
+        }]
+      })
 
-      if (!response.ok) return null
-
-      const data = await response.json()
       const spreadsheetId = data.spreadsheetId
 
       // Add header row
-      await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAME}!A1:D1?valueInputOption=RAW`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            values: [['날짜', '기분', '에너지', '메모']]
-          })
-        }
-      )
+      await api.updateSheetValues(spreadsheetId, `${SHEET_NAME}!A1:D1`, [['날짜', '기분', '에너지', '메모']])
 
       return spreadsheetId
     } catch (error) {
@@ -107,7 +77,7 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
 
   // Initialize spreadsheet
   const initializeSheet = useCallback(async (): Promise<boolean> => {
-    if (!accessToken) return false
+    if (!isSignedIn) return false
 
     setState(prev => ({ ...prev, isLoading: true, error: null }))
 
@@ -116,7 +86,7 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
 
       // Check existing spreadsheet
       if (sheetId) {
-        const isValid = await verifySpreadsheet(accessToken, sheetId)
+        const isValid = await verifySpreadsheet(sheetId)
         if (!isValid) {
           sheetId = null
           localStorage.removeItem(SPREADSHEET_ID_KEY)
@@ -125,7 +95,7 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
 
       // Create new if needed
       if (!sheetId) {
-        sheetId = await createSpreadsheet(accessToken)
+        sheetId = await createSpreadsheet()
         if (!sheetId) {
           setState(prev => ({
             ...prev,
@@ -153,30 +123,15 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
       }))
       return false
     }
-  }, [accessToken, state.spreadsheetId, verifySpreadsheet, createSpreadsheet])
+  }, [isSignedIn, state.spreadsheetId, verifySpreadsheet, createSpreadsheet])
 
   // Fetch entries
-  const fetchEntries = useCallback(async (token: string, sheetId: string) => {
+  const fetchEntries = useCallback(async (sheetId: string) => {
     try {
       setState(prev => ({ ...prev, isLoading: true }))
 
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${SHEET_NAME}!A2:D100`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const data = await api.getSheetValues(sheetId, `${SHEET_NAME}!A2:D100`)
 
-      if (response.status === 401) {
-        setState(prev => ({ ...prev, isLoading: false, error: null, entries: [] }))
-        return
-      }
-
-      if (!response.ok) {
-        throw new Error('데이터를 가져올 수 없습니다')
-      }
-
-      const data = await response.json()
       const entries: DailyLogEntry[] = (data.values || []).map((row: string[]) => ({
         date: row[0] || '',
         mood: parseInt(row[1]) || 3,
@@ -201,7 +156,7 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
 
   // Auto-initialize and fetch on mount
   useEffect(() => {
-    if (!accessToken) {
+    if (!isSignedIn) {
       setState(prev => ({
         ...prev,
         entries: [],
@@ -213,10 +168,10 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
 
     const init = async () => {
       if (state.spreadsheetId) {
-        const isValid = await verifySpreadsheet(accessToken, state.spreadsheetId)
+        const isValid = await verifySpreadsheet(state.spreadsheetId)
         if (isValid) {
           setState(prev => ({ ...prev, isInitialized: true }))
-          await fetchEntries(accessToken, state.spreadsheetId!)
+          await fetchEntries(state.spreadsheetId!)
         } else {
           localStorage.removeItem(SPREADSHEET_ID_KEY)
           setState(prev => ({ ...prev, spreadsheetId: null, isInitialized: false }))
@@ -225,18 +180,18 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
     }
 
     init()
-  }, [accessToken, state.spreadsheetId, verifySpreadsheet, fetchEntries])
+  }, [isSignedIn, state.spreadsheetId, verifySpreadsheet, fetchEntries])
 
   // Refresh entries
   const refresh = useCallback(() => {
-    if (accessToken && state.spreadsheetId && state.isInitialized) {
-      fetchEntries(accessToken, state.spreadsheetId)
+    if (isSignedIn && state.spreadsheetId && state.isInitialized) {
+      fetchEntries(state.spreadsheetId)
     }
-  }, [accessToken, state.spreadsheetId, state.isInitialized, fetchEntries])
+  }, [isSignedIn, state.spreadsheetId, state.isInitialized, fetchEntries])
 
   // Add new entry
   const addEntry = useCallback(async (entry: Omit<DailyLogEntry, 'date'>): Promise<boolean> => {
-    if (!accessToken || !state.spreadsheetId) return false
+    if (!isSignedIn || !state.spreadsheetId) return false
 
     const today = format(new Date(), 'yyyy-MM-dd')
 
@@ -248,33 +203,22 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
     }
 
     try {
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/${SHEET_NAME}!A:D:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            values: [[today, entry.mood, entry.energy, entry.note]]
-          })
-        }
+      await api.appendSheetValues(
+        state.spreadsheetId,
+        `${SHEET_NAME}!A:D`,
+        [[today, entry.mood, entry.energy, entry.note]]
       )
-
-      if (!response.ok) return false
-
-      await fetchEntries(accessToken, state.spreadsheetId)
+      await fetchEntries(state.spreadsheetId)
       return true
     } catch (error) {
       console.error('Failed to add entry:', error)
       return false
     }
-  }, [accessToken, state.spreadsheetId, state.entries, fetchEntries])
+  }, [isSignedIn, state.spreadsheetId, state.entries, fetchEntries])
 
   // Update existing entry
   const updateEntry = useCallback(async (date: string, entry: Partial<Omit<DailyLogEntry, 'date'>>): Promise<boolean> => {
-    if (!accessToken || !state.spreadsheetId) return false
+    if (!isSignedIn || !state.spreadsheetId) return false
 
     // Find row index
     const rowIndex = state.entries.findIndex(e => e.date === date)
@@ -288,29 +232,18 @@ export function useGoogleSheets(accessToken: string | null): GoogleSheetsState &
     }
 
     try {
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${state.spreadsheetId}/values/${SHEET_NAME}!A${rowIndex + 2}:D${rowIndex + 2}?valueInputOption=RAW`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            values: [[date, updatedEntry.mood, updatedEntry.energy, updatedEntry.note]]
-          })
-        }
+      await api.updateSheetValues(
+        state.spreadsheetId,
+        `${SHEET_NAME}!A${rowIndex + 2}:D${rowIndex + 2}`,
+        [[date, updatedEntry.mood, updatedEntry.energy, updatedEntry.note]]
       )
-
-      if (!response.ok) return false
-
-      await fetchEntries(accessToken, state.spreadsheetId)
+      await fetchEntries(state.spreadsheetId)
       return true
     } catch (error) {
       console.error('Failed to update entry:', error)
       return false
     }
-  }, [accessToken, state.spreadsheetId, state.entries, fetchEntries])
+  }, [isSignedIn, state.spreadsheetId, state.entries, fetchEntries])
 
   // Get today's entry
   const getTodayEntry = useCallback((): DailyLogEntry | null => {

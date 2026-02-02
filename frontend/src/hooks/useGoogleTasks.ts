@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useGoogleAuth } from '../contexts/GoogleAuthContext'
+import { api } from '../lib/api'
 
 export interface Task {
   id: string
@@ -34,14 +36,17 @@ function parseTask(task: any): Task {
   }
 }
 
-export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
+export function useGoogleTasks(): GoogleTasksState & {
   refresh: () => void
   addTask: (title: string, notes?: string, due?: string) => Promise<boolean>
   toggleTask: (taskId: string, completed: boolean) => Promise<boolean>
   deleteTask: (taskId: string) => Promise<boolean>
   updateTask: (taskId: string, title: string, notes?: string, due?: string) => Promise<boolean>
+  postponeTask: (taskId: string) => Promise<boolean>
   selectList: (listId: string) => void
 } {
+  const { isSignedIn } = useGoogleAuth()
+
   const [state, setState] = useState<GoogleTasksState>({
     tasks: [],
     taskLists: [],
@@ -51,38 +56,13 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
   })
 
   // Fetch task lists
-  const fetchTaskLists = useCallback(async (token: string) => {
+  const fetchTaskLists = useCallback(async () => {
     try {
-      const response = await fetch(
-        'https://tasks.googleapis.com/tasks/v1/users/@me/lists',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
-
-      if (response.status === 401) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: null,
-          tasks: [],
-          taskLists: []
-        }))
-        return null
-      }
-
-      if (!response.ok) {
-        throw new Error('할일 목록을 가져올 수 없습니다')
-      }
-
-      const data = await response.json()
-      const lists: TaskList[] = (data.items || []).map((list: any) => ({
+      const items = await api.getTaskLists()
+      const lists: TaskList[] = items.map((list: any) => ({
         id: list.id,
         title: list.title
       }))
-
       return lists
     } catch (error) {
       console.error('Failed to fetch task lists:', error)
@@ -91,35 +71,12 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
   }, [])
 
   // Fetch tasks from a specific list
-  const fetchTasks = useCallback(async (token: string, listId: string) => {
+  const fetchTasks = useCallback(async (listId: string) => {
     try {
       setState(prev => ({ ...prev, isLoading: true }))
 
-      const response = await fetch(
-        `https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks?showCompleted=true&showHidden=true&maxResults=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
-
-      if (response.status === 401) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: null,
-          tasks: []
-        }))
-        return
-      }
-
-      if (!response.ok) {
-        throw new Error('할일을 가져올 수 없습니다')
-      }
-
-      const data = await response.json()
-      const tasks = (data.items || [])
+      const items = await api.getTasks(listId)
+      const tasks = items
         .filter((task: any) => task.title) // Filter out empty tasks
         .map(parseTask)
         .sort((a: Task, b: Task) => {
@@ -147,7 +104,7 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
 
   // Initialize - fetch task lists and select the first one
   useEffect(() => {
-    if (!accessToken) {
+    if (!isSignedIn) {
       setState(prev => ({
         ...prev,
         tasks: [],
@@ -160,7 +117,7 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
 
     const init = async () => {
       setState(prev => ({ ...prev, isLoading: true }))
-      const lists = await fetchTaskLists(accessToken)
+      const lists = await fetchTaskLists()
 
       if (lists && lists.length > 0) {
         const savedListId = localStorage.getItem('google_tasks_selected_list')
@@ -174,7 +131,7 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
           selectedListId: selectedList
         }))
 
-        await fetchTasks(accessToken, selectedList)
+        await fetchTasks(selectedList)
       } else {
         setState(prev => ({
           ...prev,
@@ -185,140 +142,110 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
     }
 
     init()
-  }, [accessToken, fetchTaskLists, fetchTasks])
+  }, [isSignedIn, fetchTaskLists, fetchTasks])
 
   // Refresh tasks
   const refresh = useCallback(() => {
-    if (accessToken && state.selectedListId) {
-      fetchTasks(accessToken, state.selectedListId)
+    if (isSignedIn && state.selectedListId) {
+      fetchTasks(state.selectedListId)
     }
-  }, [accessToken, state.selectedListId, fetchTasks])
+  }, [isSignedIn, state.selectedListId, fetchTasks])
 
   // Select a different task list
   const selectList = useCallback((listId: string) => {
     localStorage.setItem('google_tasks_selected_list', listId)
     setState(prev => ({ ...prev, selectedListId: listId }))
-    if (accessToken) {
-      fetchTasks(accessToken, listId)
+    if (isSignedIn) {
+      fetchTasks(listId)
     }
-  }, [accessToken, fetchTasks])
+  }, [isSignedIn, fetchTasks])
 
   // Add a new task
   const addTask = useCallback(async (title: string, notes?: string, due?: string): Promise<boolean> => {
-    if (!accessToken || !state.selectedListId) return false
+    if (!isSignedIn || !state.selectedListId) return false
 
     try {
       const task: any = { title }
       if (notes) task.notes = notes
       if (due) task.due = new Date(due).toISOString()
 
-      const response = await fetch(
-        `https://tasks.googleapis.com/tasks/v1/lists/${state.selectedListId}/tasks`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(task)
-        }
-      )
-
-      if (!response.ok) return false
-
-      await fetchTasks(accessToken, state.selectedListId)
+      await api.createTask(state.selectedListId, task)
+      await fetchTasks(state.selectedListId)
       return true
     } catch (error) {
       console.error('Failed to add task:', error)
       return false
     }
-  }, [accessToken, state.selectedListId, fetchTasks])
+  }, [isSignedIn, state.selectedListId, fetchTasks])
 
   // Toggle task completion
   const toggleTask = useCallback(async (taskId: string, completed: boolean): Promise<boolean> => {
-    if (!accessToken || !state.selectedListId) return false
+    if (!isSignedIn || !state.selectedListId) return false
 
     try {
-      const response = await fetch(
-        `https://tasks.googleapis.com/tasks/v1/lists/${state.selectedListId}/tasks/${taskId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            status: completed ? 'completed' : 'needsAction',
-            completed: completed ? new Date().toISOString() : null
-          })
-        }
-      )
-
-      if (!response.ok) return false
-
-      await fetchTasks(accessToken, state.selectedListId)
+      await api.updateTask(state.selectedListId, taskId, {
+        status: completed ? 'completed' : 'needsAction',
+        completed: completed ? new Date().toISOString() : undefined
+      })
+      await fetchTasks(state.selectedListId)
       return true
     } catch (error) {
       console.error('Failed to toggle task:', error)
       return false
     }
-  }, [accessToken, state.selectedListId, fetchTasks])
+  }, [isSignedIn, state.selectedListId, fetchTasks])
 
   // Delete a task
   const deleteTask = useCallback(async (taskId: string): Promise<boolean> => {
-    if (!accessToken || !state.selectedListId) return false
+    if (!isSignedIn || !state.selectedListId) return false
 
     try {
-      const response = await fetch(
-        `https://tasks.googleapis.com/tasks/v1/lists/${state.selectedListId}/tasks/${taskId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }
-      )
-
-      if (!response.ok && response.status !== 204) return false
-
-      await fetchTasks(accessToken, state.selectedListId)
+      await api.deleteTask(state.selectedListId, taskId)
+      await fetchTasks(state.selectedListId)
       return true
     } catch (error) {
       console.error('Failed to delete task:', error)
       return false
     }
-  }, [accessToken, state.selectedListId, fetchTasks])
+  }, [isSignedIn, state.selectedListId, fetchTasks])
 
   // Update a task
   const updateTask = useCallback(async (taskId: string, title: string, notes?: string, due?: string): Promise<boolean> => {
-    if (!accessToken || !state.selectedListId) return false
+    if (!isSignedIn || !state.selectedListId) return false
 
     try {
       const task: any = { title }
       if (notes !== undefined) task.notes = notes
       if (due) task.due = new Date(due).toISOString()
 
-      const response = await fetch(
-        `https://tasks.googleapis.com/tasks/v1/lists/${state.selectedListId}/tasks/${taskId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(task)
-        }
-      )
-
-      if (!response.ok) return false
-
-      await fetchTasks(accessToken, state.selectedListId)
+      await api.updateTask(state.selectedListId, taskId, task)
+      await fetchTasks(state.selectedListId)
       return true
     } catch (error) {
       console.error('Failed to update task:', error)
       return false
     }
-  }, [accessToken, state.selectedListId, fetchTasks])
+  }, [isSignedIn, state.selectedListId, fetchTasks])
+
+  // Postpone task to tomorrow
+  const postponeTask = useCallback(async (taskId: string): Promise<boolean> => {
+    if (!isSignedIn || !state.selectedListId) return false
+
+    try {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(0, 0, 0, 0)
+
+      await api.updateTask(state.selectedListId, taskId, {
+        due: tomorrow.toISOString()
+      })
+      await fetchTasks(state.selectedListId)
+      return true
+    } catch (error) {
+      console.error('Failed to postpone task:', error)
+      return false
+    }
+  }, [isSignedIn, state.selectedListId, fetchTasks])
 
   return {
     ...state,
@@ -327,6 +254,7 @@ export function useGoogleTasks(accessToken: string | null): GoogleTasksState & {
     toggleTask,
     deleteTask,
     updateTask,
+    postponeTask,
     selectList
   }
 }

@@ -28,9 +28,9 @@ const menuItems: MenuItem[] = [
   },
   {
     path: '/life-anchors',
-    label: '생활 앵커',
+    label: '반복 일정',
     icon: '🔔',
-    description: '규칙적인 생활 패턴을 위한 앵커를 설정합니다'
+    description: '매일 반복되는 일정을 설정합니다'
   },
   {
     path: '/study-journal',
@@ -46,7 +46,7 @@ export default function PlanPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          📋 플랜
+          📋 생활
         </h1>
       </div>
 

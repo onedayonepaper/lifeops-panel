@@ -53,8 +53,8 @@ function TaskItem({
 }
 
 export function TasksCard() {
-  const { accessToken, isSignedIn, signIn } = useGoogleAuth()
-  const { tasks, isLoading, toggleTask } = useGoogleTasks(accessToken)
+  const { isSignedIn, signIn } = useGoogleAuth()
+  const { tasks, isLoading, toggleTask } = useGoogleTasks()
   const { addBatchEvents } = useGoogleCalendar()
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
 

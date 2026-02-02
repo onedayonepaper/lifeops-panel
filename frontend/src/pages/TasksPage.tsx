@@ -319,7 +319,7 @@ function EditTaskModal({
 }
 
 export function TasksPage() {
-  const { accessToken, isSignedIn, signIn } = useGoogleAuth()
+  const { isSignedIn, signIn } = useGoogleAuth()
   const {
     tasks,
     taskLists,
@@ -332,7 +332,7 @@ export function TasksPage() {
     deleteTask,
     updateTask,
     selectList
-  } = useGoogleTasks(accessToken)
+  } = useGoogleTasks()
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)

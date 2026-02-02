@@ -22,14 +22,16 @@ const isNavGroup = (entry: NavEntry): entry is NavGroup => {
 
 const navItems: NavEntry[] = [
   {
-    label: '플랜',
+    label: '생활',
     icon: '📋',
     path: '/plan',
     children: [
       { path: '/today', label: '오늘 카드', icon: '🌅' },
       { path: '/calendar', label: '캘린더', icon: '📅' },
       { path: '/tasks', label: '할일', icon: '✅' },
-      { path: '/life-anchors', label: '생활 앵커', icon: '🔔' },
+      { path: '/life-anchors', label: '반복 일정', icon: '🔔' },
+      { path: '/house-finding', label: '방구하기', icon: '🏠' },
+      { path: '/api-keys', label: 'API 키', icon: '🔑' },
       { path: '/study-journal', label: '공부장', icon: '📚' },
     ]
   },
@@ -55,7 +57,7 @@ interface SidebarProps {
 
 export function Sidebar({ isNightMode }: SidebarProps) {
   const location = useLocation()
-  const [isCollapsed, setIsCollapsed] = useState(true)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['커리어'])
 
