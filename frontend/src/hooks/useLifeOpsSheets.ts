@@ -32,6 +32,14 @@ export const SHEET_CONFIGS = {
   todayTasks: {
     sheetName: '오늘 할일',
     headers: ['id', 'title', 'completed', 'due', 'createdAt']
+  },
+  routineTemplate: {
+    sheetName: '루틴 템플릿',
+    headers: ['id', 'label', 'detail', 'category', 'order', 'actionUrl', 'actionLabel']
+  },
+  routineLog: {
+    sheetName: '루틴 기록',
+    headers: ['id', 'routineId', 'label', 'detail', 'date', 'completed', 'completedAt']
   }
 } as const
 
@@ -105,7 +113,9 @@ export function useLifeOpsSheets<T>(
             { properties: { title: SHEET_CONFIGS.portfolio.sheetName } },
             { properties: { title: SHEET_CONFIGS.experience.sheetName } },
             { properties: { title: SHEET_CONFIGS.application.sheetName } },
-            { properties: { title: SHEET_CONFIGS.todayTasks.sheetName } }
+            { properties: { title: SHEET_CONFIGS.todayTasks.sheetName } },
+            { properties: { title: SHEET_CONFIGS.routineTemplate.sheetName } },
+            { properties: { title: SHEET_CONFIGS.routineLog.sheetName } }
           ]
         })
       })
