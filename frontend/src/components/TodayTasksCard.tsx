@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useGoogleAuth } from '../contexts/GoogleAuthContext'
-import { useGoogleTasks, type Task } from '../hooks/useGoogleTasks'
+import { useTodayTasksSheet, type TodayTask } from '../hooks/useTodayTasksSheet'
 
 function TaskItem({
   task,
@@ -9,7 +7,7 @@ function TaskItem({
   onPostpone,
   onDelete
 }: {
-  task: Task
+  task: TodayTask
   onToggle: (taskId: string, completed: boolean) => void
   onPostpone: (taskId: string) => void
   onDelete: (taskId: string) => void
@@ -64,8 +62,19 @@ function TaskItem({
 }
 
 export function TodayTasksCard() {
-  const { isSignedIn, signIn } = useGoogleAuth()
-  const { tasks, isLoading, toggleTask, postponeTask, deleteTask, addTask } = useGoogleTasks()
+  const {
+    tasks,
+    incompleteTasks,
+    completedTasks,
+    isLoading,
+    isSignedIn,
+    signIn,
+    toggleTask,
+    postponeTask,
+    deleteTask,
+    addTask,
+    spreadsheetUrl
+  } = useTodayTasksSheet()
   const [isAdding, setIsAdding] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [copied, setCopied] = useState(false)
@@ -73,7 +82,7 @@ export function TodayTasksCard() {
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return
     const today = new Date().toISOString().split('T')[0]
-    await addTask(newTaskTitle.trim(), undefined, today)
+    await addTask(newTaskTitle.trim(), today)
     setNewTaskTitle('')
     setIsAdding(false)
   }
@@ -85,35 +94,16 @@ export function TodayTasksCard() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // 오늘 날짜
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  // 오늘 마감이거나 마감일이 없는 미완료 할일 + 완료된 할일
-  const todayTasks = tasks.filter(task => {
-    if (task.due) {
-      const dueDate = new Date(task.due)
-      dueDate.setHours(0, 0, 0, 0)
-      return dueDate <= today // 오늘 또는 지난 마감일
-    }
-    return true // 마감일 없는 할일도 표시
-  })
-
-  const incompleteTasks = todayTasks.filter(t => !t.completed)
-  const completedTasks = todayTasks.filter(t => t.completed)
-
   // 로그인 필요
   if (!isSignedIn) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">오늘 할일</h2>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">오늘 할일</h2>
         </div>
         <div className="p-4 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            Google Tasks와 연동하세요
+          <p className="text-sm text-gray-400 mb-3">
+            Google Sheets와 연동하세요
           </p>
           <button
             onClick={signIn}
@@ -129,24 +119,24 @@ export function TodayTasksCard() {
   // 로딩
   if (isLoading && tasks.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">오늘 할일</h2>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-700">
+          <h2 className="text-lg font-semibold text-white">오늘 할일</h2>
         </div>
         <div className="p-4 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">로딩 중...</p>
+          <p className="text-sm text-gray-400">로딩 중...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+    <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white">
           오늘 할일
           {incompleteTasks.length > 0 && (
-            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+            <span className="ml-2 text-sm font-normal text-gray-400">
               {incompleteTasks.length}개 남음
             </span>
           )}
@@ -176,16 +166,20 @@ export function TodayTasksCard() {
               )}
             </svg>
           </button>
-          <Link
-            to="/tasks"
-            className="text-sm text-blue-500 hover:text-blue-400"
-          >
-            전체보기
-          </Link>
+{spreadsheetUrl && (
+            <a
+              href={spreadsheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-500 hover:text-blue-400"
+            >
+              시트 열기
+            </a>
+          )}
         </div>
       </div>
 
-      <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+      <div className="divide-y divide-gray-700/50">
         {/* 할일 추가 입력 */}
         {isAdding && (
           <div className="px-3 py-2">
@@ -209,7 +203,7 @@ export function TodayTasksCard() {
 
         {incompleteTasks.length === 0 && !isAdding ? (
           <div className="p-4 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-400">
               {completedTasks.length > 0 ? '모두 완료! 🎉' : '오늘 할일이 없습니다'}
             </p>
           </div>
@@ -221,14 +215,16 @@ export function TodayTasksCard() {
             ))}
 
             {/* 더 있으면 표시 */}
-            {incompleteTasks.length > 5 && (
+            {incompleteTasks.length > 5 && spreadsheetUrl && (
               <div className="px-4 py-2 text-center">
-                <Link
-                  to="/tasks"
+                <a
+                  href={spreadsheetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-gray-500 hover:text-gray-400"
                 >
                   +{incompleteTasks.length - 5}개 더보기
-                </Link>
+                </a>
               </div>
             )}
           </>
@@ -237,15 +233,15 @@ export function TodayTasksCard() {
 
       {/* 진행률 - 미완료 할일이 있을 때만 표시 */}
       {incompleteTasks.length > 0 && (
-        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+        <div className="px-4 py-3 border-t border-gray-700">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>진행률</span>
-            <span>{completedTasks.length}/{todayTasks.length}</span>
+            <span>{completedTasks.length}/{tasks.length}</span>
           </div>
-          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-              style={{ width: `${(completedTasks.length / todayTasks.length) * 100}%` }}
+              style={{ width: `${(completedTasks.length / tasks.length) * 100}%` }}
             />
           </div>
         </div>

@@ -28,6 +28,10 @@ export const SHEET_CONFIGS = {
   application: {
     sheetName: '지원 현황',
     headers: ['id', 'name', 'logo', 'tier', 'position', 'status', 'deadline', 'appliedDate', 'notes', 'salary', 'techStack', 'url']
+  },
+  todayTasks: {
+    sheetName: '오늘 할일',
+    headers: ['id', 'title', 'completed', 'due', 'createdAt']
   }
 } as const
 
@@ -100,7 +104,8 @@ export function useLifeOpsSheets<T>(
             { properties: { title: SHEET_CONFIGS.japanese.sheetName } },
             { properties: { title: SHEET_CONFIGS.portfolio.sheetName } },
             { properties: { title: SHEET_CONFIGS.experience.sheetName } },
-            { properties: { title: SHEET_CONFIGS.application.sheetName } }
+            { properties: { title: SHEET_CONFIGS.application.sheetName } },
+            { properties: { title: SHEET_CONFIGS.todayTasks.sheetName } }
           ]
         })
       })
