@@ -5,9 +5,9 @@ import { useGoogleDocs, type DocumentType, type DriveFile } from '../hooks/useGo
 
 // 섹션 설정
 const SECTIONS = [
-  { type: 'resume' as DocumentType, label: '이력서', icon: '📄', color: 'blue' },
-  { type: 'career' as DocumentType, label: '경력기술서', icon: '📋', color: 'green' },
-  { type: 'project' as DocumentType, label: '포트폴리오', icon: '💼', color: 'orange' },
+  { type: 'resume' as DocumentType, label: '이력서', icon: '📄', color: 'blue' as const },
+  { type: 'career' as DocumentType, label: '경력기술서', icon: '📋', color: 'green' as const },
+  { type: 'project' as DocumentType, label: '포트폴리오', icon: '💼', color: 'orange' as const },
 ]
 
 const colorClasses = {
