@@ -20,7 +20,7 @@ export default function ProjectDetailPage() {
           <div className="text-5xl mb-4">😢</div>
           <p className="text-gray-400 mb-4">프로젝트를 찾을 수 없습니다</p>
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-medium transition-colors inline-block"
           >
             목록으로 돌아가기
@@ -33,7 +33,7 @@ export default function ProjectDetailPage() {
   const handleDelete = () => {
     if (confirm('이 프로젝트를 삭제하시겠습니까?')) {
       deleteResume(id)
-      navigate('/resume')
+      navigate('/job-document')
     }
   }
 
@@ -42,7 +42,7 @@ export default function ProjectDetailPage() {
       <PageHeader icon="🚀" title="프로젝트">
         <div className="flex items-center gap-2">
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
           >
             ← 목록

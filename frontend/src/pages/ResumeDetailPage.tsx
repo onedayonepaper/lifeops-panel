@@ -20,7 +20,7 @@ export default function ResumeDetailPage() {
           <div className="text-5xl mb-4">😢</div>
           <p className="text-gray-400 mb-4">이력서를 찾을 수 없습니다</p>
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors inline-block"
           >
             목록으로 돌아가기
@@ -33,7 +33,7 @@ export default function ResumeDetailPage() {
   const handleDelete = () => {
     if (confirm('이 이력서를 삭제하시겠습니까?')) {
       deleteResume(id)
-      navigate('/resume')
+      navigate('/job-document')
     }
   }
 
@@ -42,13 +42,13 @@ export default function ResumeDetailPage() {
       <PageHeader icon="📄" title={meta.title}>
         <div className="flex items-center gap-2">
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
           >
             ← 목록
           </Link>
           <Link
-            to={`/resume/${id}/edit`}
+            to={`/job-document/${id}/edit`}
             className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

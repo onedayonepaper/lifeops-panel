@@ -21,7 +21,7 @@ const menuItems: MenuItem[] = [
     description: '프로젝트 경험을 관리합니다'
   },
   {
-    path: '/resume',
+    path: '/job-document',
     label: '취업서류',
     icon: '📄',
     description: '이력서와 자기소개서를 관리합니다'

@@ -27,7 +27,8 @@ const SCOPES = [
   'https://www.googleapis.com/auth/tasks',
   'https://www.googleapis.com/auth/spreadsheets',
   'https://www.googleapis.com/auth/drive.file',
-  'https://www.googleapis.com/auth/documents'
+  'https://www.googleapis.com/auth/documents',
+  'https://www.googleapis.com/auth/gmail.send'
 ].join(' ')
 
 const TOKEN_KEY = 'lifeops_access_token'

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { isAfter, format, subDays } from 'date-fns'
-import { db, type DayState, type Settings } from '../store/db'
+import { db, type DayState, type Settings, resetDatabase } from '../store/db'
 import { getOrCreateTodayState, updateNotes } from '../store/dayState'
 import { getSettings } from '../store/settings'
 
@@ -59,8 +59,14 @@ export function useDayState(): UseDayStateReturn {
         effectiveDateKeyRef.current = dateKey
 
         await getOrCreateTodayState(s.resetTime)
-      } catch (e) {
+      } catch (e: any) {
         console.error('[DayState] Init error:', e)
+        // If Dexie error, try to reset database
+        if (e?.name?.includes('Dexie') || e?.name === 'VersionError' || e?.name === 'UpgradeError') {
+          console.log('[DayState] Attempting database reset...')
+          await resetDatabase()
+          return // resetDatabase will reload the page
+        }
         if (isMounted) {
           setError('초기화에 실패했습니다')
         }

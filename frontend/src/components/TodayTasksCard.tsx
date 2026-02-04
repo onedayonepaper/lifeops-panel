@@ -171,9 +171,12 @@ export function TodayTasksCard() {
               href={spreadsheetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-blue-500 hover:text-blue-400"
+              className="px-2 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 text-xs font-medium transition-colors flex items-center gap-1"
             >
-              시트 열기
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 11V9h-6V3H7c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-6h-8v-2h8zm-6-8 6 6h-6V3z"/>
+              </svg>
+              시트
             </a>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDailyRoutineSheet } from '../hooks/useDailyRoutineSheet'
 import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
+import { useGoogleAuth } from '../contexts/GoogleAuthContext'
 
 export function DailyRoutineCard() {
   const {
@@ -18,9 +19,11 @@ export function DailyRoutineCard() {
   } = useDailyRoutineSheet()
 
   const { addBatchEvents } = useGoogleCalendar()
+  const { accessToken, userEmail } = useGoogleAuth()
 
   const [isExpanded, setIsExpanded] = useState(true)
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [showAddInput, setShowAddInput] = useState(false)
   const [newItemLabel, setNewItemLabel] = useState('')
   const [copied, setCopied] = useState(false)
@@ -31,6 +34,80 @@ export function DailyRoutineCard() {
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // 루틴을 이메일로 보내기
+  const sendRoutineEmail = async () => {
+    if (!accessToken || !userEmail || todayLogs.length === 0 || isSendingEmail) return
+
+    setIsSendingEmail(true)
+
+    const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
+    const completedCount = todayLogs.filter(l => l.completed).length
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a1a2e; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">🚀 LifeOps - 오늘의 루틴</h2>
+        <p style="color: #666; font-size: 14px;">${today} | 진행률: ${stats.percentage}% (${completedCount}/${stats.total})</p>
+        <div style="margin-top: 16px;">
+          ${todayLogs.map(log => `
+            <div style="padding: 12px 16px; margin: 8px 0; background: ${log.completed ? '#f0fdf4' : '#fafafa'}; border-radius: 8px; border-left: 4px solid ${log.completed ? '#22c55e' : '#94a3b8'};">
+              <div style="font-size: 15px; color: #1a1a2e; ${log.completed ? 'text-decoration: line-through; color: #9ca3af;' : ''}">
+                ${log.completed ? '✅' : '⬜'} ${log.label}
+              </div>
+              ${log.detail ? `<div style="font-size: 13px; color: #6b7280; margin-top: 4px;">${log.detail}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top: 20px; padding: 12px; background: #eff6ff; border-radius: 8px; text-align: center;">
+          <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${stats.percentage}%</div>
+          <div style="font-size: 13px; color: #6b7280;">오늘 달성률</div>
+        </div>
+        <p style="margin-top: 20px; font-size: 12px; color: #9ca3af; text-align: center;">LifeOps Panel에서 발송</p>
+      </div>
+    `
+
+    const subject = `📋 오늘의 루틴 - ${today} (${stats.percentage}%)`
+    const rawEmail = [
+      `To: ${userEmail}`,
+      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+      'Content-Type: text/html; charset=UTF-8',
+      '',
+      htmlBody
+    ].join('\r\n')
+
+    const encodedMessage = btoa(unescape(encodeURIComponent(rawEmail)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+
+    try {
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw: encodedMessage })
+      })
+
+      if (response.ok) {
+        alert('📧 루틴이 이메일로 전송되었습니다!')
+      } else {
+        const err = await response.json()
+        if (err.error?.code === 403 || err.error?.code === 401) {
+          alert('Gmail 권한이 필요합니다. 로그아웃 후 다시 로그인해주세요.')
+        } else {
+          alert('이메일 전송에 실패했습니다.')
+        }
+        console.error('[Email] Send error:', err)
+      }
+    } catch (err) {
+      console.error('[Email] Error:', err)
+      alert('이메일 전송 중 오류가 발생했습니다.')
+    }
+
+    setIsSendingEmail(false)
   }
 
   // 루틴을 캘린더에 추가
@@ -150,6 +227,19 @@ export function DailyRoutineCard() {
               )}
             </svg>
           </button>
+          {/* 이메일로 보내기 */}
+          <button
+            onClick={sendRoutineEmail}
+            disabled={isSendingEmail}
+            className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
+              isSendingEmail ? 'text-blue-400 animate-pulse' : 'text-gray-400 hover:text-white'
+            }`}
+            title="이메일로 보내기"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </button>
           {/* 캘린더에 추가 */}
           <button
             onClick={addRoutineToCalendar}
@@ -163,18 +253,18 @@ export function DailyRoutineCard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </button>
-          {/* 시트 열기 */}
+          {/* 구글 시트에서 보기 */}
           {spreadsheetUrl && (
             <a
               href={spreadsheetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-              title="시트 열기"
+              className="px-2 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 text-xs font-medium transition-colors flex items-center gap-1"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 11V9h-6V3H7c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-6h-8v-2h8zm-6-8 6 6h-6V3z"/>
               </svg>
+              시트
             </a>
           )}
           <button

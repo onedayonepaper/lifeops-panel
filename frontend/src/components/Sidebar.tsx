@@ -36,17 +36,41 @@ const navItems: NavEntry[] = [
     ]
   },
   {
-    label: '커리어',
+    label: '이력관리',
+    icon: '📝',
+    path: '/profile',
+    children: [
+      { path: '/profile', label: '프로필', icon: '🧠' },
+      { path: '/resume', label: '이력서', icon: '📃' },
+      { path: '/career-description', label: '경력기술서', icon: '📋' },
+      { path: '/portfolio', label: '포트폴리오', icon: '💼' },
+      { path: '/job-document', label: '취업서류', icon: '📄' },
+      { path: '/self-introduction', label: '자기소개서', icon: '✍️' },
+      { path: '/external-profiles', label: '외부 이력 관리', icon: '🔗' },
+    ]
+  },
+  {
+    label: '구직활동',
     icon: '🚀',
     path: '/career',
     children: [
-      { path: '/profile', label: '프로필', icon: '🧠' },
-      { path: '/portfolio', label: '포트폴리오', icon: '💼' },
-      { path: '/resume', label: '취업서류', icon: '📄' },
-      { path: '/apply', label: '지원', icon: '📝' },
+      { path: '/apply', label: '채용공고', icon: '🎯' },
       { path: '/company', label: '회사', icon: '🏢' },
       { path: '/public-sector-it', label: '공공기관 IT', icon: '🏛️' },
       { path: '/job-documents', label: '취업지원모음', icon: '📂' },
+    ]
+  },
+  {
+    label: '재테크',
+    icon: '💰',
+    path: '/finance',
+    children: [
+      { path: '/finance', label: '자산현황', icon: '📊' },
+      { path: '/savings', label: '적금', icon: '🏦' },
+      { path: '/insurance', label: '보험', icon: '🛡️' },
+      { path: '/subscriptions', label: '구독서비스', icon: '📱' },
+      { path: '/fixed-expenses', label: '고정지출', icon: '📋' },
+      { path: '/cards', label: '카드', icon: '💳' },
     ]
   },
 ]
@@ -59,7 +83,7 @@ export function Sidebar({ isNightMode }: SidebarProps) {
   const location = useLocation()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['커리어'])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['이력관리', '구직활동', '재테크'])
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev =>

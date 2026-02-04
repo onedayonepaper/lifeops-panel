@@ -19,7 +19,7 @@ const menuCards: MenuCard[] = [
     color: 'from-purple-600 to-purple-800'
   },
   {
-    path: '/resume',
+    path: '/job-document',
     icon: '📄',
     label: '취업서류',
     description: '이력서, 자기소개서, 경력기술서',

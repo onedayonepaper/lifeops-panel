@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie, { type Table } from 'dexie'
 
 // Types
 export interface DayState {
@@ -19,35 +19,34 @@ export interface Settings {
 
 // Database class
 class LifeOpsDB extends Dexie {
-  dayState!: EntityTable<DayState, 'date'>
-  settings!: EntityTable<Settings, 'id'>
+  dayState!: Table<DayState, string>
+  settings!: Table<Settings, number>
 
   constructor() {
     super('LifeOpsDB')
 
     this.version(1).stores({
-      dayState: 'date, createdAt, updatedAt',
+      dayState: 'date',
       settings: 'id'
-    })
-
-    this.version(2).stores({
-      dayState: 'date, createdAt, updatedAt',
-      settings: 'id',
-      habits: '++id, createdAt',
-      habitLogs: '++id, habitId, date, [habitId+date]'
-    })
-
-    // Version 3: Remove habits, habitLogs tables and simplify DayState
-    this.version(3).stores({
-      dayState: 'date, createdAt, updatedAt',
-      settings: 'id',
-      habits: null,
-      habitLogs: null
     })
   }
 }
 
+// Create database instance
 export const db = new LifeOpsDB()
+
+// Reset database if corrupted
+export async function resetDatabase(): Promise<void> {
+  try {
+    await db.delete()
+    window.location.reload()
+  } catch (e) {
+    console.error('Failed to reset database:', e)
+    // Force delete via IndexedDB API
+    indexedDB.deleteDatabase('LifeOpsDB')
+    window.location.reload()
+  }
+}
 
 // Initialize default settings
 export async function initializeSettings(): Promise<Settings> {
@@ -83,7 +82,7 @@ export async function exportAllData(): Promise<string> {
   const settings = await db.settings.toArray()
 
   const exportData = {
-    version: 3,
+    version: 1,
     exportedAt: new Date().toISOString(),
     data: {
       dayStates,

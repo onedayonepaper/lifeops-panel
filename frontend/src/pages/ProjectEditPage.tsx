@@ -92,7 +92,7 @@ export default function ProjectEditPage() {
             프로젝트를 생성하려면 Google 로그인이 필요합니다
           </p>
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
           >
             취업서류 페이지로 이동
@@ -117,7 +117,7 @@ export default function ProjectEditPage() {
             </a>
           )}
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
           >
             ← 돌아가기
@@ -166,7 +166,7 @@ export default function ProjectEditPage() {
         {/* 저장 버튼 */}
         <div className="flex gap-3 pt-4">
           <Link
-            to="/resume"
+            to="/job-document"
             className="flex-1 py-4 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-bold text-lg text-center transition-colors"
           >
             취소

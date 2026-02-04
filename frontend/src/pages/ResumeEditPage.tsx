@@ -106,7 +106,7 @@ export default function ResumeEditPage() {
           <div className="text-5xl mb-4">😢</div>
           <p className="text-gray-400 mb-4">이력서를 찾을 수 없습니다</p>
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors inline-block"
           >
             목록으로 돌아가기
@@ -210,9 +210,9 @@ export default function ResumeEditPage() {
     }
     alert('저장되었습니다')
     if (existingResume) {
-      navigate(`/resume/${existingResume.id}`)
+      navigate(`/job-document/${existingResume.id}`)
     } else {
-      navigate('/resume')
+      navigate('/job-document')
     }
   }
 
@@ -229,7 +229,7 @@ export default function ResumeEditPage() {
 
     if (resumeId) {
       alert(existingResume ? '이력서가 수정되었습니다' : '이력서가 생성되었습니다')
-      navigate(`/resume/${resumeId}`)
+      navigate(`/job-document/${resumeId}`)
     }
   }
 
@@ -238,7 +238,7 @@ export default function ResumeEditPage() {
       <PageHeader icon="📄" title={isNewMode ? "이력서 작성" : "이력서 수정"}>
         <div className="flex items-center gap-2">
           <Link
-            to={existingResume ? `/resume/${existingResume.id}` : '/resume'}
+            to={existingResume ? `/job-document/${existingResume.id}` : '/job-document'}
             className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
           >
             ← 돌아가기

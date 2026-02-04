@@ -80,6 +80,18 @@ export interface DocumentMeta {
   createdAt: string
   modifiedAt?: string
   folderId: string
+  mimeType?: string
+  webViewLink?: string
+}
+
+export interface DriveFile {
+  id: string
+  name: string
+  mimeType: string
+  createdTime: string
+  modifiedTime?: string
+  webViewLink?: string
+  thumbnailLink?: string
 }
 
 export interface ProjectDocData {
@@ -758,6 +770,87 @@ export function useGoogleDocs(accessToken: string | null) {
     }
   }, [accessToken, syncWithDrive])
 
+  // 폴더 내 모든 파일 가져오기 (모든 타입)
+  const getFilesInFolder = useCallback(async (folderId: string): Promise<DriveFile[]> => {
+    if (!accessToken || !folderId) return []
+
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType,createdTime,modifiedTime,webViewLink,thumbnailLink)&orderBy=modifiedTime desc`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.files || []
+      }
+      return []
+    } catch {
+      return []
+    }
+  }, [accessToken])
+
+  // 파일 업로드
+  const uploadFile = useCallback(async (file: File, type: DocumentType): Promise<string | null> => {
+    if (!accessToken) return null
+
+    try {
+      const { subfolders } = await initializeFolderStructure()
+      const folderId = subfolders[type]
+      if (!folderId) throw new Error('폴더를 찾을 수 없습니다')
+
+      // Multipart 업로드
+      const metadata = {
+        name: file.name,
+        parents: [folderId],
+      }
+
+      const form = new FormData()
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
+      form.append('file', file)
+
+      const response = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: form,
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        await syncWithDrive()
+        return data.id
+      }
+      return null
+    } catch {
+      return null
+    }
+  }, [accessToken, initializeFolderStructure, syncWithDrive])
+
+  // 파일 삭제
+  const deleteFile = useCallback(async (fileId: string): Promise<boolean> => {
+    if (!accessToken) return false
+
+    try {
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ trashed: true }),
+      })
+
+      return response.ok
+    } catch {
+      return false
+    }
+  }, [accessToken])
+
   // URL 생성 함수들
   const getDocumentUrl = useCallback((documentId: string): string => {
     return `https://docs.google.com/document/d/${documentId}/edit`
@@ -883,6 +976,11 @@ export function useGoogleDocs(accessToken: string | null) {
     getDocumentUrl,
     getFolderUrl,
     getDocumentsByType,
+
+    // 파일 관리 함수
+    getFilesInFolder,
+    uploadFile,
+    deleteFile,
 
     // 호환성 함수
     createResume,

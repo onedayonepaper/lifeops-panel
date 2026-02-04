@@ -186,7 +186,7 @@ export default function CareerEditPage() {
           <div className="text-5xl mb-4">😢</div>
           <p className="text-gray-400 mb-4">경력기술서를 찾을 수 없습니다</p>
           <Link
-            to="/resume"
+            to="/job-document"
             className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors inline-block"
           >
             목록으로 돌아가기
@@ -308,7 +308,7 @@ export default function CareerEditPage() {
     if (existingCareer) {
       navigate(`/career/${existingCareer.id}`)
     } else {
-      navigate('/resume')
+      navigate('/job-document')
     }
   }
 
@@ -334,7 +334,7 @@ export default function CareerEditPage() {
       <PageHeader icon="📋" title={isNewMode ? "경력기술서 작성" : "경력기술서 수정"}>
         <div className="flex items-center gap-2">
           <Link
-            to={existingCareer ? `/career/${existingCareer.id}` : '/resume'}
+            to={existingCareer ? `/career/${existingCareer.id}` : '/job-document'}
             className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
           >
             ← 돌아가기

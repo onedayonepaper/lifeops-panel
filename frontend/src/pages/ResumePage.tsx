@@ -1,56 +1,56 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
 import { PageHeader } from '../components/PageHeader'
 import { useGoogleAuth } from '../contexts/GoogleAuthContext'
-import { useGoogleDocs, type DocumentMeta, type DocumentType } from '../hooks/useGoogleDocs'
+import { useGoogleDocs, type DocumentType, type DriveFile } from '../hooks/useGoogleDocs'
 
-// 문서 타입별 설정
-const DOC_CONFIG = {
-  resume: {
-    name: '이력서',
-    icon: '📄',
-    color: 'blue',
-    viewPath: '/resume',
-    editPath: '/resume/edit/new',
-    single: true, // 1개만 허용
-  },
-  career: {
-    name: '경력기술서',
-    icon: '📋',
-    color: 'green',
-    viewPath: '/career',
-    editPath: '/career/edit/new',
-    single: true,
-  },
-  project: {
-    name: '프로젝트',
-    icon: '🚀',
-    color: 'orange',
-    viewPath: '/project',
-    editPath: '/project/edit/new',
-    single: false, // 여러 개 허용
-  },
-} as const
+// 섹션 설정
+const SECTIONS = [
+  { type: 'resume' as DocumentType, label: '이력서', icon: '📄', color: 'blue' },
+  { type: 'career' as DocumentType, label: '경력기술서', icon: '📋', color: 'green' },
+  { type: 'project' as DocumentType, label: '포트폴리오', icon: '💼', color: 'orange' },
+]
 
-// 색상 클래스 매핑
 const colorClasses = {
   blue: {
-    badge: 'bg-blue-500/20 text-blue-400',
-    icon: 'text-blue-400',
-    button: 'bg-blue-600 hover:bg-blue-500',
+    bg: 'bg-blue-500/20',
     border: 'border-blue-500/30',
+    text: 'text-blue-400',
+    button: 'bg-blue-600 hover:bg-blue-500',
   },
   green: {
-    badge: 'bg-green-500/20 text-green-400',
-    icon: 'text-green-400',
-    button: 'bg-green-600 hover:bg-green-500',
+    bg: 'bg-green-500/20',
     border: 'border-green-500/30',
+    text: 'text-green-400',
+    button: 'bg-green-600 hover:bg-green-500',
   },
   orange: {
-    badge: 'bg-orange-500/20 text-orange-400',
-    icon: 'text-orange-400',
-    button: 'bg-orange-600 hover:bg-orange-500',
+    bg: 'bg-orange-500/20',
     border: 'border-orange-500/30',
+    text: 'text-orange-400',
+    button: 'bg-orange-600 hover:bg-orange-500',
   },
+}
+
+// 파일 아이콘 결정
+function getFileIcon(mimeType: string): string {
+  if (mimeType.includes('pdf')) return '📕'
+  if (mimeType.includes('document') || mimeType.includes('word')) return '📝'
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return '📊'
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return '📽️'
+  if (mimeType.includes('image')) return '🖼️'
+  if (mimeType.includes('video')) return '🎬'
+  if (mimeType.includes('audio')) return '🎵'
+  if (mimeType.includes('zip') || mimeType.includes('archive')) return '📦'
+  return '📄'
+}
+
+// 파일 크기 포맷
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 // 외부 링크 아이콘
@@ -62,182 +62,144 @@ function ExternalLinkIcon() {
   )
 }
 
-// 단일 문서 카드 (이력서, 경력기술서)
-interface SingleDocCardProps {
-  type: 'resume' | 'career'
-  doc: DocumentMeta | undefined
-  onDelete: (id: string) => void
-  getDocumentUrl: (id: string) => string
+interface FileSectionProps {
+  type: DocumentType
+  label: string
+  icon: string
+  color: 'blue' | 'green' | 'orange'
+  files: DriveFile[]
+  folderId: string | null
+  onUpload: (file: File, type: DocumentType) => Promise<void>
+  onDelete: (fileId: string) => Promise<void>
+  isUploading: boolean
 }
 
-function SingleDocCard({ type, doc, onDelete, getDocumentUrl }: SingleDocCardProps) {
-  const config = DOC_CONFIG[type]
-  const colors = colorClasses[config.color]
+function FileSection({ type, label, icon, color, files, folderId, onUpload, onDelete, isUploading }: FileSectionProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const colors = colorClasses[color]
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      await onUpload(file, type)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleDelete = async (fileId: string, fileName: string) => {
+    if (confirm(`"${fileName}"을(를) 삭제하시겠습니까?\n\n※ Google Drive 휴지통으로 이동됩니다.`)) {
+      await onDelete(fileId)
+    }
+  }
+
+  const folderUrl = folderId ? `https://drive.google.com/drive/folders/${folderId}` : null
 
   return (
-    <div className="bg-gray-700/50 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-white font-medium flex items-center gap-2">
-          <span className={colors.icon}>{config.icon}</span> {config.name}
-        </h4>
-        {doc && (
-          <span className={`px-2 py-0.5 ${colors.badge} text-xs rounded`}>생성됨</span>
-        )}
-      </div>
-
-      {doc ? (
-        <div className="space-y-2">
-          <p className="text-gray-400 text-sm truncate" title={doc.title}>{doc.title}</p>
-          <p className="text-gray-500 text-xs">
-            {new Date(doc.createdAt).toLocaleDateString('ko-KR', {
-              year: 'numeric', month: 'short', day: 'numeric'
-            })}
-          </p>
-          <div className="grid grid-cols-4 gap-1">
-            <Link
-              to={`${config.viewPath}/${doc.id}`}
-              className={`px-2 py-2 ${colors.button} text-white text-xs rounded-lg text-center transition-colors`}
-            >
-              보기
-            </Link>
-            <Link
-              to={`${config.viewPath}/${doc.id}/edit`}
-              className="px-2 py-2 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded-lg text-center transition-colors"
-            >
-              수정
-            </Link>
+    <div className={`bg-gray-700/50 rounded-xl border ${colors.border}`}>
+      {/* 헤더 */}
+      <div className="px-4 py-3 border-b border-gray-600/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{icon}</span>
+          <h3 className={`font-semibold ${colors.text}`}>{label}</h3>
+          <span className="text-gray-500 text-sm">({files.length})</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {folderUrl && (
             <a
-              href={getDocumentUrl(doc.id)}
+              href={folderUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg text-center transition-colors flex items-center justify-center"
-              title="Google 문서에서 열기"
+              className="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+              title="폴더 열기"
             >
-              Docs<ExternalLinkIcon />
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+              </svg>
             </a>
-            <button
-              onClick={() => onDelete(doc.id)}
-              className="px-2 py-2 bg-red-600 hover:bg-red-500 text-white text-xs rounded-lg text-center transition-colors"
-            >
-              삭제
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-4">
-          <p className="text-gray-500 text-sm mb-3">{config.name}가 없습니다</p>
-          <Link
-            to={config.editPath}
-            className={`px-4 py-2 ${colors.button} text-white text-sm rounded-lg inline-block transition-colors`}
-          >
-            + {config.name} 추가
-          </Link>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// 프로젝트 목록 카드 (여러 개 지원)
-interface ProjectListCardProps {
-  projects: DocumentMeta[]
-  onDelete: (id: string) => void
-  getDocumentUrl: (id: string) => string
-  getFolderUrl: (type: DocumentType) => string
-}
-
-function ProjectListCard({ projects, onDelete, getDocumentUrl, getFolderUrl }: ProjectListCardProps) {
-  const config = DOC_CONFIG.project
-  const colors = colorClasses[config.color]
-
-  return (
-    <div className="bg-gray-700/50 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-white font-medium flex items-center gap-2">
-          <span className={colors.icon}>{config.icon}</span> {config.name}
-          {projects.length > 0 && (
-            <span className={`px-2 py-0.5 ${colors.badge} text-xs rounded`}>{projects.length}개</span>
           )}
-        </h4>
-        <div className="flex items-center gap-2">
-          <a
-            href={getFolderUrl('project')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-white text-xs flex items-center"
-            title="프로젝트 폴더 열기"
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+            disabled={isUploading}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className={`px-3 py-1.5 ${colors.button} text-white text-xs rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50`}
           >
-            폴더<ExternalLinkIcon />
-          </a>
-          <Link
-            to={config.editPath}
-            className={`px-3 py-1 ${colors.button} text-white text-xs rounded-lg transition-colors`}
-          >
-            + 추가
-          </Link>
+            {isUploading ? (
+              <>
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                업로드 중...
+              </>
+            ) : (
+              <>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                업로드
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {projects.length > 0 ? (
-        <div className="space-y-2 max-h-80 overflow-y-auto">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className={`bg-gray-800/50 border ${colors.border} rounded-lg p-3`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-white text-sm font-medium truncate flex-1" title={project.title}>
-                  {project.title}
-                </p>
-                <span className="text-gray-500 text-xs ml-2 whitespace-nowrap">
-                  {new Date(project.modifiedAt || project.createdAt).toLocaleDateString('ko-KR', {
-                    month: 'short', day: 'numeric'
-                  })}
-                </span>
+      {/* 파일 목록 */}
+      <div className="p-3">
+        {files.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-3xl mb-2 opacity-50">{icon}</div>
+            <p className="text-gray-500 text-sm">{label}가 없습니다</p>
+            <p className="text-gray-600 text-xs mt-1">파일을 업로드해주세요</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {files.map(file => (
+              <div
+                key={file.id}
+                className="flex items-center justify-between p-2.5 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors group"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="text-lg flex-shrink-0">{getFileIcon(file.mimeType)}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white text-sm truncate" title={file.name}>{file.name}</p>
+                    <p className="text-gray-500 text-xs">{formatDate(file.modifiedTime || file.createdTime)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {file.webViewLink && (
+                    <a
+                      href={file.webViewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                      title="열기"
+                    >
+                      <ExternalLinkIcon />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => handleDelete(file.id, file.name)}
+                    className="p-1.5 rounded hover:bg-red-600/20 text-gray-400 hover:text-red-400 transition-colors"
+                    title="삭제"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-4 gap-1">
-                <Link
-                  to={`${config.viewPath}/${project.id}`}
-                  className={`px-2 py-1.5 ${colors.button} text-white text-xs rounded text-center transition-colors`}
-                >
-                  보기
-                </Link>
-                <Link
-                  to={`${config.viewPath}/${project.id}/edit`}
-                  className="px-2 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded text-center transition-colors"
-                >
-                  수정
-                </Link>
-                <a
-                  href={getDocumentUrl(project.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded text-center transition-colors flex items-center justify-center"
-                >
-                  Docs<ExternalLinkIcon />
-                </a>
-                <button
-                  onClick={() => onDelete(project.id)}
-                  className="px-2 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs rounded text-center transition-colors"
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-6">
-          <p className="text-gray-500 text-sm mb-3">프로젝트가 없습니다</p>
-          <p className="text-gray-600 text-xs mb-4">포트폴리오에 보여줄 프로젝트를 추가하세요</p>
-          <Link
-            to={config.editPath}
-            className={`px-4 py-2 ${colors.button} text-white text-sm rounded-lg inline-block transition-colors`}
-          >
-            + 첫 프로젝트 추가
-          </Link>
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -245,26 +207,77 @@ function ProjectListCard({ projects, onDelete, getDocumentUrl, getFolderUrl }: P
 export default function ResumePage() {
   const { isSignedIn, signIn, accessToken } = useGoogleAuth()
   const {
-    documents,
-    error,
-    isLoading,
+    subfolderIds,
     getFolderUrl,
-    getDocumentUrl,
-    deleteDocument,
-    getDocumentsByType,
+    getFilesInFolder,
+    uploadFile,
+    deleteFile,
+    syncWithDrive,
+    isLoading,
+    error,
   } = useGoogleDocs(accessToken)
 
-  const resumeDoc = documents.find(d => d.type === 'resume')
-  const careerDoc = documents.find(d => d.type === 'career')
-  const projectDocs = getDocumentsByType('project')
+  const [files, setFiles] = useState<Record<DocumentType, DriveFile[]>>({
+    resume: [],
+    career: [],
+    project: [],
+  })
+  const [uploadingType, setUploadingType] = useState<DocumentType | null>(null)
 
-  const handleDelete = async (id: string) => {
-    const doc = documents.find(d => d.id === id)
-    const typeName = doc ? DOC_CONFIG[doc.type].name : '문서'
+  // 파일 목록 로드
+  useEffect(() => {
+    async function loadFiles() {
+      if (!accessToken) return
 
-    if (!confirm(`${typeName}를 삭제하시겠습니까?\n\n※ Google Drive 휴지통으로 이동됩니다.`)) return
+      const newFiles: Record<DocumentType, DriveFile[]> = {
+        resume: [],
+        career: [],
+        project: [],
+      }
 
-    await deleteDocument(id)
+      for (const section of SECTIONS) {
+        const folderId = subfolderIds[section.type]
+        if (folderId) {
+          const folderFiles = await getFilesInFolder(folderId)
+          newFiles[section.type] = folderFiles
+        }
+      }
+
+      setFiles(newFiles)
+    }
+
+    loadFiles()
+  }, [accessToken, subfolderIds, getFilesInFolder])
+
+  // 파일 업로드 핸들러
+  const handleUpload = async (file: File, type: DocumentType) => {
+    setUploadingType(type)
+    try {
+      const fileId = await uploadFile(file, type)
+      if (fileId) {
+        // 해당 폴더 파일 목록 새로고침
+        const folderId = subfolderIds[type]
+        if (folderId) {
+          const folderFiles = await getFilesInFolder(folderId)
+          setFiles(prev => ({ ...prev, [type]: folderFiles }))
+        }
+      }
+    } finally {
+      setUploadingType(null)
+    }
+  }
+
+  // 파일 삭제 핸들러
+  const handleDelete = async (fileId: string) => {
+    const success = await deleteFile(fileId)
+    if (success) {
+      // 모든 섹션에서 해당 파일 제거
+      setFiles(prev => ({
+        resume: prev.resume.filter(f => f.id !== fileId),
+        career: prev.career.filter(f => f.id !== fileId),
+        project: prev.project.filter(f => f.id !== fileId),
+      }))
+    }
   }
 
   // 로그인 안된 상태
@@ -277,7 +290,7 @@ export default function ResumePage() {
           <h3 className="text-white text-lg font-medium mb-2">취업서류 관리</h3>
           <p className="text-gray-400 mb-6">
             Google 계정으로 로그인하면<br />
-            이력서, 경력기술서, 프로젝트를 관리할 수 있습니다
+            이력서, 경력기술서, 포트폴리오를 관리할 수 있습니다
           </p>
           <button
             onClick={signIn}
@@ -299,18 +312,30 @@ export default function ResumePage() {
   return (
     <div>
       <PageHeader icon="📄" title="취업서류">
-        <a
-          href={getFolderUrl()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-          title="취업서류 폴더 열기"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-          </svg>
-          <ExternalLinkIcon />
-        </a>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={syncWithDrive}
+            disabled={isLoading}
+            className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+            title="새로고침"
+          >
+            <svg className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <a
+            href={getFolderUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+            title="취업서류 폴더 열기"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+            </svg>
+            <ExternalLinkIcon />
+          </a>
+        </div>
       </PageHeader>
 
       {error && (
@@ -336,30 +361,22 @@ export default function ResumePage() {
           </p>
         </div>
 
+        {/* 3개 섹션 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* 이력서 */}
-          <SingleDocCard
-            type="resume"
-            doc={resumeDoc}
-            onDelete={handleDelete}
-            getDocumentUrl={getDocumentUrl}
-          />
-
-          {/* 경력기술서 */}
-          <SingleDocCard
-            type="career"
-            doc={careerDoc}
-            onDelete={handleDelete}
-            getDocumentUrl={getDocumentUrl}
-          />
-
-          {/* 프로젝트 목록 */}
-          <ProjectListCard
-            projects={projectDocs}
-            onDelete={handleDelete}
-            getDocumentUrl={getDocumentUrl}
-            getFolderUrl={getFolderUrl}
-          />
+          {SECTIONS.map(section => (
+            <FileSection
+              key={section.type}
+              type={section.type}
+              label={section.label}
+              icon={section.icon}
+              color={section.color}
+              files={files[section.type]}
+              folderId={subfolderIds[section.type]}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              isUploading={uploadingType === section.type}
+            />
+          ))}
         </div>
       </div>
     </div>

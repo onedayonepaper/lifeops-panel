@@ -262,15 +262,22 @@ export function useDailyRoutineSheet() {
     }
   }, [accessToken])
 
-  // 오늘 로그 생성 (템플릿 기반)
+  // 오늘 로그 생성 (템플릿 기반, 기존 로그의 routineId는 제외)
   const createTodayLogs = useCallback(async (
     sheetId: string,
-    templates: RoutineTemplate[]
+    templates: RoutineTemplate[],
+    existingRoutineIds: Set<string> = new Set()
   ): Promise<RoutineLogItem[]> => {
     if (!accessToken || templates.length === 0) return []
 
     const today = getTodayKey()
-    const newLogs: RoutineLogItem[] = templates.map(t => ({
+
+    // 이미 존재하는 routineId는 제외
+    const templatesToCreate = templates.filter(t => !existingRoutineIds.has(t.id))
+
+    if (templatesToCreate.length === 0) return []
+
+    const newLogs: RoutineLogItem[] = templatesToCreate.map(t => ({
       id: `log_${t.id}_${today}`,
       routineId: t.id,
       label: t.label,
@@ -325,9 +332,21 @@ export function useDailyRoutineSheet() {
 
       let logs = await loadTodayLogs(sheetId)
 
-      // 오늘 로그가 없으면 생성
-      if (logs.length === 0 && loadedTemplates.length > 0) {
-        logs = await createTodayLogs(sheetId, loadedTemplates)
+      // 중복 로그 제거 (routineId 기준, 첫 번째만 유지)
+      const seenRoutineIds = new Set<string>()
+      logs = logs.filter(log => {
+        if (seenRoutineIds.has(log.routineId)) {
+          return false
+        }
+        seenRoutineIds.add(log.routineId)
+        return true
+      })
+
+      // 기존 로그에 없는 템플릿만 추가 생성
+      if (loadedTemplates.length > 0) {
+        const existingRoutineIds = new Set(logs.map(l => l.routineId))
+        const newLogs = await createTodayLogs(sheetId, loadedTemplates, existingRoutineIds)
+        logs = [...logs, ...newLogs]
       }
 
       setTodayLogs(logs)
