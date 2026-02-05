@@ -61,11 +61,9 @@ export function useDayState(): UseDayStateReturn {
         await getOrCreateTodayState(s.resetTime)
       } catch (e: any) {
         console.error('[DayState] Init error:', e)
-        // If Dexie error, try to reset database
+        // Log Dexie error but don't reset (avoid infinite reload loop)
         if (e?.name?.includes('Dexie') || e?.name === 'VersionError' || e?.name === 'UpgradeError') {
-          console.log('[DayState] Attempting database reset...')
-          await resetDatabase()
-          return // resetDatabase will reload the page
+          console.warn('[DayState] Dexie error - continuing without DB:', e?.message)
         }
         if (isMounted) {
           setError('초기화에 실패했습니다')

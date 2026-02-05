@@ -48,10 +48,12 @@ import FixedExpensesPage from './pages/FixedExpensesPage'
 import CardsPage from './pages/CardsPage'
 import SelfIntroductionPage from './pages/SelfIntroductionPage'
 import ExternalProfilesPage from './pages/ExternalProfilesPage'
+import AppliedCompanyPage from './pages/AppliedCompanyPage'
+import WeakPointsPage from './pages/WeakPointsPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
-  const { dayState, settings, isLoading } = useDayState()
+  const { dayState, settings, isLoading, error } = useDayState()
   const { isSignedIn, signOut } = useGoogleAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -60,7 +62,7 @@ function Layout({ children }: { children: ReactNode }) {
     settings?.nightModeEnd || '06:00'
   )
 
-  if (isLoading || !dayState || !settings) {
+  if (isLoading && !error) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
         isNight ? 'bg-gray-950' : 'bg-gray-900'
@@ -79,24 +81,28 @@ function Layout({ children }: { children: ReactNode }) {
       <Sidebar isNightMode={isNight} />
 
       <div className="flex-1 min-w-0">
-        <TopBar
-          dayState={dayState}
-          isNightMode={isNight}
-          onRefreshClick={() => window.location.reload()}
-          onSettingsClick={() => setIsSettingsOpen(true)}
-          isSignedIn={isSignedIn}
-          onSignOut={signOut}
-        />
+        {dayState && (
+          <TopBar
+            dayState={dayState}
+            isNightMode={isNight}
+            onRefreshClick={() => window.location.reload()}
+            onSettingsClick={() => setIsSettingsOpen(true)}
+            isSignedIn={isSignedIn}
+            onSignOut={signOut}
+          />
+        )}
 
         <main className="p-2 sm:p-4 pb-8">
           {children}
         </main>
 
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          settings={settings}
-        />
+        {settings && (
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            settings={settings}
+          />
+        )}
       </div>
     </div>
   )
@@ -139,6 +145,7 @@ function App() {
             <Route path="/employment" element={<EmploymentPage />} />
             <Route path="/apply" element={<ApplyPage />} />
             <Route path="/company" element={<CompanyPage />} />
+            <Route path="/applied-company" element={<AppliedCompanyPage />} />
             <Route path="/japanese" element={<JapanesePage />} />
             <Route path="/japanese/hiragana" element={<HiraganaPracticePage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
@@ -170,6 +177,7 @@ function App() {
             <Route path="/cards" element={<CardsPage />} />
             <Route path="/self-introduction" element={<SelfIntroductionPage />} />
             <Route path="/external-profiles" element={<ExternalProfilesPage />} />
+            <Route path="/weak-points" element={<WeakPointsPage />} />
           </Routes>
         </Layout>
       } />

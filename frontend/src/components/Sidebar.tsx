@@ -47,6 +47,7 @@ const navItems: NavEntry[] = [
       { path: '/job-document', label: '취업서류', icon: '📄' },
       { path: '/self-introduction', label: '자기소개서', icon: '✍️' },
       { path: '/external-profiles', label: '외부 이력 관리', icon: '🔗' },
+      { path: '/weak-points', label: '부족한점', icon: '💪' },
     ]
   },
   {
@@ -55,9 +56,17 @@ const navItems: NavEntry[] = [
     path: '/career',
     children: [
       { path: '/apply', label: '채용공고', icon: '🎯' },
+      { path: '/applied-company', label: '지원회사', icon: '📨' },
+      { path: '/job-documents', label: '취업지원모음', icon: '📂' },
+    ]
+  },
+  {
+    label: '정보',
+    icon: 'ℹ️',
+    path: '/company',
+    children: [
       { path: '/company', label: '회사', icon: '🏢' },
       { path: '/public-sector-it', label: '공공기관 IT', icon: '🏛️' },
-      { path: '/job-documents', label: '취업지원모음', icon: '📂' },
     ]
   },
   {
@@ -83,7 +92,7 @@ export function Sidebar({ isNightMode }: SidebarProps) {
   const location = useLocation()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['이력관리', '구직활동', '재테크'])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['이력관리', '구직활동', '정보', '재테크'])
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev =>

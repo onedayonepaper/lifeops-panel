@@ -40,6 +40,14 @@ export const SHEET_CONFIGS = {
   routineLog: {
     sheetName: '루틴 기록',
     headers: ['id', 'routineId', 'label', 'detail', 'date', 'completed', 'completedAt']
+  },
+  appliedCompany: {
+    sheetName: '지원회사',
+    headers: ['id', 'companyName', 'position', 'appliedDate', 'status', 'deadline', 'notes', 'result', 'url']
+  },
+  weakPoints: {
+    sheetName: '부족한점',
+    headers: ['id', 'name', 'category', 'currentLevel', 'targetLevel', 'status', 'notes', 'acquiredDate']
   }
 } as const
 
@@ -115,7 +123,9 @@ export function useLifeOpsSheets<T>(
             { properties: { title: SHEET_CONFIGS.application.sheetName } },
             { properties: { title: SHEET_CONFIGS.todayTasks.sheetName } },
             { properties: { title: SHEET_CONFIGS.routineTemplate.sheetName } },
-            { properties: { title: SHEET_CONFIGS.routineLog.sheetName } }
+            { properties: { title: SHEET_CONFIGS.routineLog.sheetName } },
+            { properties: { title: SHEET_CONFIGS.appliedCompany.sheetName } },
+            { properties: { title: SHEET_CONFIGS.weakPoints.sheetName } }
           ]
         })
       })
