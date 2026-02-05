@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { isAfter, format, subDays } from 'date-fns'
-import { db, type DayState, type Settings, resetDatabase } from '../store/db'
+import { db, type DayState, type Settings } from '../store/db'
 import { getOrCreateTodayState, updateNotes } from '../store/dayState'
 import { getSettings } from '../store/settings'
 

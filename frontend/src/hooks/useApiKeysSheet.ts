@@ -122,6 +122,36 @@ export function useApiKeysSheet(accessToken: string | null): ApiKeysSheetState &
     }
   }, [])
 
+  // Search for existing spreadsheet in LifeOps folder
+  const searchSpreadsheet = useCallback(async (token: string): Promise<string | null> => {
+    try {
+      const folderId = await getOrCreateFolder(token)
+      if (!folderId) return null
+
+      const query = encodeURIComponent(`name='LifeOps API Keys' and '${folderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`)
+      const searchResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      if (!searchResponse.ok) return null
+
+      const searchData = await searchResponse.json()
+      if (searchData.files && searchData.files.length > 0) {
+        const sheetId = searchData.files[0].id
+        const isValid = await verifySpreadsheet(token, sheetId)
+        if (isValid) return sheetId
+      }
+
+      return null
+    } catch (error) {
+      console.error('Failed to search spreadsheet:', error)
+      return null
+    }
+  }, [getOrCreateFolder, verifySpreadsheet])
+
   // Create new spreadsheet with ApiKeys sheet in LifeOps folder
   const createSpreadsheet = useCallback(async (token: string): Promise<string | null> => {
     try {
@@ -211,7 +241,12 @@ export function useApiKeysSheet(accessToken: string | null): ApiKeysSheetState &
         }
       }
 
-      // Create new if needed
+      // Search existing before creating new
+      if (!sheetId) {
+        sheetId = await searchSpreadsheet(accessToken)
+      }
+
+      // Create new if still not found
       if (!sheetId) {
         sheetId = await createSpreadsheet(accessToken)
         if (!sheetId) {
@@ -241,7 +276,7 @@ export function useApiKeysSheet(accessToken: string | null): ApiKeysSheetState &
       }))
       return false
     }
-  }, [accessToken, state.spreadsheetId, verifySpreadsheet, createSpreadsheet])
+  }, [accessToken, state.spreadsheetId, verifySpreadsheet, searchSpreadsheet, createSpreadsheet])
 
   // Fetch entries
   const fetchEntries = useCallback(async (token: string, sheetId: string) => {
