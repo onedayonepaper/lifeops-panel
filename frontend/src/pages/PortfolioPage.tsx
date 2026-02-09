@@ -59,7 +59,7 @@ function recordToRow(record: ProjectRecord): string[] {
   ]
 }
 
-export default function PortfolioPage() {
+export function PortfolioContent() {
   const {
     data: records,
     isLoading,
@@ -77,12 +77,6 @@ export default function PortfolioPage() {
   if (!isSignedIn) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            💼 포트폴리오
-          </h1>
-        </div>
-
         <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
           <div className="text-4xl mb-4">🔐</div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -106,9 +100,6 @@ export default function PortfolioPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          💼 포트폴리오
-        </h1>
         <div className="p-6 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
           <p className="text-gray-500 dark:text-gray-400 mt-2">데이터를 불러오는 중...</p>
@@ -119,33 +110,21 @@ export default function PortfolioPage() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          💼 포트폴리오
-        </h1>
-        <div className="flex items-center gap-2">
-          {spreadsheetUrl && (
-            <a
-              href={spreadsheetUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-              title="Google Sheets에서 보기"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM9 17H6v-2h3v2zm0-4H6v-2h3v2zm0-4H6V7h3v2zm9 8h-7v-2h7v2zm0-4h-7v-2h7v2zm0-4h-7V7h7v2z"/>
-              </svg>
-            </a>
-          )}
-          <Link
-            to="/"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            title="홈으로"
+      {/* 상단 액션 버튼 */}
+      <div className="flex items-center justify-end gap-2">
+        {spreadsheetUrl && (
+          <a
+            href={spreadsheetUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+            title="Google Sheets에서 보기"
           >
-            🏠
-          </Link>
-        </div>
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM9 17H6v-2h3v2zm0-4H6v-2h3v2zm0-4H6V7h3v2zm9 8h-7v-2h7v2zm0-4h-7v-2h7v2zm0-4h-7V7h7v2z"/>
+            </svg>
+          </a>
+        )}
       </div>
 
       {/* 에러 메시지 */}
@@ -236,6 +215,17 @@ export default function PortfolioPage() {
           </Link>
         </div>
       </div>
+    </div>
+  )
+}
+
+export default function PortfolioPage() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        💼 포트폴리오
+      </h1>
+      <PortfolioContent />
     </div>
   )
 }

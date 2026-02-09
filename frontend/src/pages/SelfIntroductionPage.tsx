@@ -64,7 +64,7 @@ const SELF_INTRO_SECTIONS: Section[] = [
 
 const SUMMARY_TEXT = `운영·유지보수 환경에서 Java/PHP 기반 업무 시스템을 담당하며, 현업 요구 반영과 장애 대응, 성능 개선을 수행해왔습니다. 특히 Oracle SQL 기반 조회/리포트 성능 이슈를 재현–분석–개선하는 방식으로 해결하며 서비스 안정성을 높였습니다. 입사 후에는 운영 품질 표준화와 선제적 성능 점검을 통해 "멈추지 않는 서비스"를 만드는 데 기여하겠습니다.`
 
-export default function SelfIntroductionPage() {
+export function SelfIntroductionContent() {
   const [expandedSections, setExpandedSections] = useState<string[]>(
     SELF_INTRO_SECTIONS.map(s => s.id)
   )
@@ -98,8 +98,6 @@ export default function SelfIntroductionPage() {
 
   return (
     <div>
-      <PageHeader icon="📝" title="자기소개서" />
-
       {/* 타겟 정보 */}
       <div className="bg-gradient-to-br from-indigo-600/20 to-blue-600/20 border border-indigo-500/30 rounded-2xl p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
@@ -224,6 +222,15 @@ export default function SelfIntroductionPage() {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+export default function SelfIntroductionPage() {
+  return (
+    <div>
+      <PageHeader icon="📝" title="자기소개서" />
+      <SelfIntroductionContent />
     </div>
   )
 }

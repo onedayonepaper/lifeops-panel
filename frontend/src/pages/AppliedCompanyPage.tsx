@@ -15,6 +15,8 @@ interface AppliedCompany {
   notes: string
   result: string
   url: string
+  driveUrl: string
+  schedule: string
 }
 
 const STATUS_CONFIG: Record<ApplyStatus, { label: string; color: string; bgColor: string }> = {
@@ -29,15 +31,43 @@ const STATUS_CONFIG: Record<ApplyStatus, { label: string; color: string; bgColor
 
 const INITIAL_DATA: AppliedCompany[] = [
   {
+    id: '3',
+    companyName: '라인정보통신',
+    position: '나주혁신도시 한전KDN 웹 개발자',
+    appliedDate: '2026-02-06',
+    status: 'applied',
+    deadline: '2026-03-14',
+    notes: '한전KDN 파견 | Java/JSP/Oracle | 연봉 3,000~8,000만원',
+    result: '',
+    url: 'https://www.jobkorea.co.kr/Recruit/GI_Read/48401715',
+    driveUrl: '',
+    schedule: ''
+  },
+  {
+    id: '2',
+    companyName: '국가직 9급 전산개발',
+    position: '전산직 / 전산개발 (75명)',
+    appliedDate: '2026-02-05',
+    status: 'applied',
+    deadline: '2026-02-06',
+    notes: '결제완료 | 필기 4/4 | 가산점: 정보처리기사 3%',
+    result: '',
+    url: 'https://gongmuwon.gosi.kr',
+    driveUrl: '',
+    schedule: '2026-04-01~04-07 가산점 등록 (정보처리기사)\n2026-04-04 필기시험\n2026-05-08 필기합격자 발표\n2026-05-28~06-02 면접시험\n2026-06-19 최종합격자 발표'
+  },
+  {
     id: '1',
     companyName: '현대오토에버',
     position: '[EnIT] Backend Developer',
     appliedDate: '2026-02-04',
-    status: 'applied',
+    status: 'rejected',
     deadline: '',
     notes: '',
-    result: '',
-    url: ''
+    result: '서류불합격',
+    url: 'https://career.hyundai-autoever.com/ko/apply',
+    driveUrl: 'https://drive.google.com/drive/folders/129rsS_B_rszK5RTBk47stfDY5JUUH7KV',
+    schedule: ''
   }
 ]
 
@@ -55,7 +85,9 @@ function rowToAppliedCompany(row: string[], headers: string[]): AppliedCompany {
     deadline: record.deadline || '',
     notes: record.notes || '',
     result: record.result || '',
-    url: record.url || ''
+    url: record.url || '',
+    driveUrl: record.driveUrl || '',
+    schedule: record.schedule || ''
   }
 }
 
@@ -69,7 +101,9 @@ function appliedCompanyToRow(item: AppliedCompany): string[] {
     item.deadline,
     item.notes,
     item.result,
-    item.url
+    item.url,
+    item.driveUrl,
+    item.schedule
   ]
 }
 
@@ -93,13 +127,16 @@ export default function AppliedCompanyPage() {
   const [items, setItems] = useState<AppliedCompany[]>(INITIAL_DATA)
   const [isInitialized, setIsInitialized] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     companyName: '',
     position: '',
     appliedDate: new Date().toISOString().split('T')[0],
     deadline: '',
     notes: '',
-    url: ''
+    url: '',
+    driveUrl: '',
+    schedule: ''
   })
 
   // Sheets 데이터와 INITIAL_DATA 병합
@@ -134,13 +171,15 @@ export default function AppliedCompanyPage() {
       deadline: formData.deadline,
       notes: formData.notes.trim(),
       result: '',
-      url: formData.url.trim()
+      url: formData.url.trim(),
+      driveUrl: formData.driveUrl.trim(),
+      schedule: formData.schedule.trim()
     }
 
     const success = await addItem(newItem)
     if (success) {
       setItems(prev => [newItem, ...prev])
-      setFormData({ companyName: '', position: '', appliedDate: new Date().toISOString().split('T')[0], deadline: '', notes: '', url: '' })
+      setFormData({ companyName: '', position: '', appliedDate: new Date().toISOString().split('T')[0], deadline: '', notes: '', url: '', driveUrl: '', schedule: '' })
       setShowForm(false)
     }
   }
@@ -154,10 +193,20 @@ export default function AppliedCompanyPage() {
     await updateItem(id, updated)
   }
 
+  const handleFieldUpdate = async (id: string, field: keyof AppliedCompany, value: string) => {
+    const item = items.find(i => i.id === id)
+    if (!item || item[field] === value) return
+
+    const updated = { ...item, [field]: value }
+    setItems(prev => prev.map(i => i.id === id ? updated : i))
+    await updateItem(id, updated)
+  }
+
   const handleDelete = async (id: string) => {
     const success = await deleteItem(id)
     if (success) {
       setItems(prev => prev.filter(i => i.id !== id))
+      if (expandedId === id) setExpandedId(null)
     }
   }
 
@@ -286,9 +335,16 @@ export default function AppliedCompanyPage() {
             />
             <input
               type="text"
-              placeholder="URL"
+              placeholder="채용 URL"
               value={formData.url}
               onChange={e => setFormData(prev => ({ ...prev, url: e.target.value }))}
+              className="px-3 py-2 bg-gray-700 rounded-lg text-white text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="Google Drive 서류 URL"
+              value={formData.driveUrl}
+              onChange={e => setFormData(prev => ({ ...prev, driveUrl: e.target.value }))}
               className="px-3 py-2 bg-gray-700 rounded-lg text-white text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
@@ -296,7 +352,14 @@ export default function AppliedCompanyPage() {
               placeholder="메모"
               value={formData.notes}
               onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="px-3 py-2 bg-gray-700 rounded-lg text-white text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 bg-gray-700 rounded-lg text-white text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:col-span-2"
+            />
+            <textarea
+              placeholder="이후 일정 (한 줄에 하나씩, 예: 2026-04-04 필기시험)"
+              value={formData.schedule}
+              onChange={e => setFormData(prev => ({ ...prev, schedule: e.target.value }))}
+              rows={3}
+              className="px-3 py-2 bg-gray-700 rounded-lg text-white text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none sm:col-span-2"
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -334,92 +397,212 @@ export default function AppliedCompanyPage() {
           <div className="divide-y divide-gray-700">
             {items.map(item => {
               const statusConfig = STATUS_CONFIG[item.status]
+              const isExpanded = expandedId === item.id
+              const scheduleLines = item.schedule ? item.schedule.split('\n').filter(l => l.trim()) : []
 
               return (
-                <div key={item.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-700/50 transition-colors">
-                  {/* Company info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white text-sm truncate">{item.companyName}</span>
-                      {item.position && (
-                        <span className="text-xs text-gray-500 truncate hidden sm:inline">{item.position}</span>
+                <div key={item.id}>
+                  {/* Main row */}
+                  <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-700/50 transition-colors">
+                    {/* Expand toggle */}
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                      className="p-1 text-gray-500 hover:text-white transition-colors flex-shrink-0"
+                      title={isExpanded ? '접기' : '펼치기'}
+                    >
+                      <svg className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+
+                    {/* Company info */}
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : item.id)}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-white text-sm truncate">{item.companyName}</span>
+                        {item.position && (
+                          <span className="text-xs text-gray-500 truncate hidden sm:inline">{item.position}</span>
+                        )}
+                        {scheduleLines.length > 0 && (
+                          <span className="text-xs text-gray-600 flex-shrink-0" title={`일정 ${scheduleLines.length}건`}>
+                            📅 {scheduleLines.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>{item.appliedDate}</span>
+                        {item.deadline && <span>~ {item.deadline}</span>}
+                        {item.notes && <span className="truncate">{item.notes}</span>}
+                      </div>
+                    </div>
+
+                    {/* Status badge */}
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${statusConfig.bgColor} ${statusConfig.color}`}>
+                      {statusConfig.label}
+                    </span>
+
+                    {/* Status change actions */}
+                    <div className="flex gap-1 flex-shrink-0">
+                      {item.status === 'applied' && (
+                        <>
+                          <button onClick={() => handleStatusChange(item.id, 'document')} className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded" title="서류 통과">&#10003;</button>
+                          <button onClick={() => handleStatusChange(item.id, 'waiting')} className="p-1 text-yellow-400 hover:bg-yellow-500/20 rounded" title="결과 대기">&#8987;</button>
+                          <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
+                        </>
+                      )}
+                      {item.status === 'waiting' && (
+                        <>
+                          <button onClick={() => handleStatusChange(item.id, 'document')} className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded" title="서류 통과">&#10003;</button>
+                          <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
+                        </>
+                      )}
+                      {item.status === 'document' && (
+                        <>
+                          <button onClick={() => handleStatusChange(item.id, 'interview1')} className="p-1 text-purple-400 hover:bg-purple-500/20 rounded" title="1차 면접">1</button>
+                          <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
+                        </>
+                      )}
+                      {item.status === 'interview1' && (
+                        <>
+                          <button onClick={() => handleStatusChange(item.id, 'interview2')} className="p-1 text-pink-400 hover:bg-pink-500/20 rounded" title="최종 면접">2</button>
+                          <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
+                        </>
+                      )}
+                      {item.status === 'interview2' && (
+                        <>
+                          <button onClick={() => handleStatusChange(item.id, 'offer')} className="p-1 text-green-400 hover:bg-green-500/20 rounded" title="합격">&#127881;</button>
+                          <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
+                        </>
+                      )}
+                      {(item.status === 'offer' || item.status === 'rejected') && (
+                        <button onClick={() => handleStatusChange(item.id, 'applied')} className="p-1 text-gray-400 hover:bg-gray-600 rounded" title="리셋">&#8634;</button>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>{item.appliedDate}</span>
-                      {item.deadline && <span>~ {item.deadline}</span>}
-                      {item.notes && <span className="truncate">{item.notes}</span>}
-                    </div>
-                  </div>
 
-                  {/* Status badge */}
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${statusConfig.bgColor} ${statusConfig.color}`}>
-                    {statusConfig.label}
-                  </span>
+                    {/* Drive docs link */}
+                    {item.driveUrl ? (
+                      <a
+                        href={item.driveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-green-400 hover:text-green-300 flex-shrink-0"
+                        title="지원 서류 (Google Drive)"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M7.71 3.5L1.15 15l4.58 7.5h13.54l4.58-7.5L17.29 3.5H7.71zm-.28 1h4.07L5.43 15H1.36l6.07-10.5zm1 0h7.14l6.07 10.5h-4.07L8.43 4.5zm8.14 1l5.57 9.5h-4.07l-5.57-9.5h4.07zM6.43 16h11.14l-3.28 5.5H9.71L6.43 16z"/>
+                        </svg>
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => setExpandedId(item.id)}
+                        className="p-1 text-gray-600 hover:text-gray-400 flex-shrink-0"
+                        title="서류 링크 추가"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" opacity={0.4}>
+                          <path d="M7.71 3.5L1.15 15l4.58 7.5h13.54l4.58-7.5L17.29 3.5H7.71zm-.28 1h4.07L5.43 15H1.36l6.07-10.5zm1 0h7.14l6.07 10.5h-4.07L8.43 4.5zm8.14 1l5.57 9.5h-4.07l-5.57-9.5h4.07zM6.43 16h11.14l-3.28 5.5H9.71L6.43 16z"/>
+                        </svg>
+                      </button>
+                    )}
 
-                  {/* Status change actions */}
-                  <div className="flex gap-1 flex-shrink-0">
-                    {item.status === 'applied' && (
-                      <>
-                        <button onClick={() => handleStatusChange(item.id, 'document')} className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded" title="서류 통과">&#10003;</button>
-                        <button onClick={() => handleStatusChange(item.id, 'waiting')} className="p-1 text-yellow-400 hover:bg-yellow-500/20 rounded" title="결과 대기">&#8987;</button>
-                        <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
-                      </>
+                    {/* URL link */}
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-gray-500 hover:text-white flex-shrink-0"
+                        title="채용 페이지"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
                     )}
-                    {item.status === 'waiting' && (
-                      <>
-                        <button onClick={() => handleStatusChange(item.id, 'document')} className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded" title="서류 통과">&#10003;</button>
-                        <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
-                      </>
-                    )}
-                    {item.status === 'document' && (
-                      <>
-                        <button onClick={() => handleStatusChange(item.id, 'interview1')} className="p-1 text-purple-400 hover:bg-purple-500/20 rounded" title="1차 면접">1</button>
-                        <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
-                      </>
-                    )}
-                    {item.status === 'interview1' && (
-                      <>
-                        <button onClick={() => handleStatusChange(item.id, 'interview2')} className="p-1 text-pink-400 hover:bg-pink-500/20 rounded" title="최종 면접">2</button>
-                        <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
-                      </>
-                    )}
-                    {item.status === 'interview2' && (
-                      <>
-                        <button onClick={() => handleStatusChange(item.id, 'offer')} className="p-1 text-green-400 hover:bg-green-500/20 rounded" title="합격">&#127881;</button>
-                        <button onClick={() => handleStatusChange(item.id, 'rejected')} className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="불합격">&#10007;</button>
-                      </>
-                    )}
-                    {(item.status === 'offer' || item.status === 'rejected') && (
-                      <button onClick={() => handleStatusChange(item.id, 'applied')} className="p-1 text-gray-400 hover:bg-gray-600 rounded" title="리셋">&#8634;</button>
-                    )}
-                  </div>
 
-                  {/* URL link */}
-                  {item.url && (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1 text-gray-500 hover:text-white flex-shrink-0"
-                      title="채용 페이지"
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded flex-shrink-0"
+                      title="삭제"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                    </a>
-                  )}
+                    </button>
+                  </div>
 
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded flex-shrink-0"
-                    title="삭제"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  {/* Expanded detail panel */}
+                  {isExpanded && (
+                    <div className="px-4 py-3 bg-gray-900/50 border-t border-gray-700/50">
+                      <div className="space-y-4 pl-6">
+                        {/* Schedule */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
+                            📅 이후 일정 / 할 것
+                          </label>
+                          {scheduleLines.length > 0 && (
+                            <div className="space-y-1 mb-2">
+                              {scheduleLines.map((line, i) => (
+                                <div key={i} className="flex items-start gap-2 text-sm">
+                                  <span className="text-gray-600 mt-0.5 flex-shrink-0">•</span>
+                                  <span className="text-gray-300">{line.trim()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <textarea
+                            defaultValue={item.schedule}
+                            onBlur={e => handleFieldUpdate(item.id, 'schedule', e.target.value)}
+                            placeholder="한 줄에 하나씩 입력 (예: 2026-04-04 필기시험)"
+                            rows={3}
+                            className="w-full px-3 py-2 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder-gray-600"
+                          />
+                        </div>
+
+                        {/* Drive URL */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
+                            📁 지원 서류 (Google Drive)
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              defaultValue={item.driveUrl}
+                              onBlur={e => handleFieldUpdate(item.id, 'driveUrl', e.target.value)}
+                              placeholder="Google Drive 링크를 붙여넣기"
+                              className="flex-1 px-3 py-2 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                            />
+                            {item.driveUrl && (
+                              <a
+                                href={item.driveUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 transition-colors flex items-center gap-1 flex-shrink-0"
+                              >
+                                열기
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Notes (editable) */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
+                            📝 메모
+                          </label>
+                          <input
+                            type="text"
+                            defaultValue={item.notes}
+                            onBlur={e => handleFieldUpdate(item.id, 'notes', e.target.value)}
+                            placeholder="메모"
+                            className="w-full px-3 py-2 bg-gray-800 rounded-lg text-white text-sm border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

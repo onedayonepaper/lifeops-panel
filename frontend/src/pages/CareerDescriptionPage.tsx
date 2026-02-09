@@ -114,7 +114,7 @@ Full-Stack Developer | 광주인공지능사업단 ATOPS 플랫폼 – MSA 기�
 • 레거시 환경 대응: PHP/JSP 기반 시스템에서의 점진적 개선과 안정성 강화에 강점`,
 }
 
-export default function CareerDescriptionPage() {
+export function CareerDescriptionContent() {
   const { years, months } = calculateCareerPeriod()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [copiedAll, setCopiedAll] = useState(false)
@@ -138,10 +138,9 @@ ${Object.values(SECTION_TEXTS).join('\n\n---\n\n')}`
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* 헤더 */}
-      <div className="text-center py-8 border-b border-gray-700">
+      {/* 인적사항 + 전체복사 */}
+      <div className="text-center py-4 border-b border-gray-700">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <h1 className="text-3xl font-bold text-white">경력기술서</h1>
           <button
             onClick={copyAll}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -540,6 +539,17 @@ ${Object.values(SECTION_TEXTS).join('\n\n---\n\n')}`
       <div className="text-center py-4 text-gray-500 text-sm">
         최종 수정일: {new Date().toLocaleDateString('ko-KR')}
       </div>
+    </div>
+  )
+}
+
+export default function CareerDescriptionPage() {
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="text-center py-8 border-b border-gray-700">
+        <h1 className="text-3xl font-bold text-white">경력기술서</h1>
+      </div>
+      <CareerDescriptionContent />
     </div>
   )
 }

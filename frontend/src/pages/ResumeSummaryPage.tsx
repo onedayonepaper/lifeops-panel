@@ -1,11 +1,6 @@
-export default function ResumeSummaryPage() {
+export function ResumeSummaryContent() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* 헤더 */}
-      <div className="text-center py-8 border-b border-gray-700">
-        <h1 className="text-3xl font-bold text-white mb-4">이력서</h1>
-      </div>
-
       {/* 인적사항 */}
       <section className="bg-gray-800 rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -266,6 +261,17 @@ export default function ResumeSummaryPage() {
       <div className="text-center py-4 text-gray-500 text-sm">
         최종 수정일: {new Date().toLocaleDateString('ko-KR')}
       </div>
+    </div>
+  )
+}
+
+export default function ResumeSummaryPage() {
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="text-center py-8 border-b border-gray-700">
+        <h1 className="text-3xl font-bold text-white mb-4">이력서</h1>
+      </div>
+      <ResumeSummaryContent />
     </div>
   )
 }

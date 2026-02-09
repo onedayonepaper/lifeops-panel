@@ -49,7 +49,8 @@ import CardsPage from './pages/CardsPage'
 import SelfIntroductionPage from './pages/SelfIntroductionPage'
 import ExternalProfilesPage from './pages/ExternalProfilesPage'
 import AppliedCompanyPage from './pages/AppliedCompanyPage'
-import WeakPointsPage from './pages/WeakPointsPage'
+import SpecSchedulePage from './pages/SpecSchedulePage'
+import ResumeManagementPage from './pages/ResumeManagementPage'
 
 // Layout wrapper with sidebar
 function Layout({ children }: { children: ReactNode }) {
@@ -177,7 +178,8 @@ function App() {
             <Route path="/cards" element={<CardsPage />} />
             <Route path="/self-introduction" element={<SelfIntroductionPage />} />
             <Route path="/external-profiles" element={<ExternalProfilesPage />} />
-            <Route path="/weak-points" element={<WeakPointsPage />} />
+            <Route path="/spec-schedule" element={<SpecSchedulePage />} />
+            <Route path="/resume-management" element={<ResumeManagementPage />} />
           </Routes>
         </Layout>
       } />

@@ -38,16 +38,18 @@ const navItems: NavEntry[] = [
   {
     label: '이력관리',
     icon: '📝',
-    path: '/profile',
+    path: '/resume-management',
     children: [
-      { path: '/profile', label: '프로필', icon: '🧠' },
-      { path: '/resume', label: '이력서', icon: '📃' },
-      { path: '/career-description', label: '경력기술서', icon: '📋' },
-      { path: '/portfolio', label: '포트폴리오', icon: '💼' },
-      { path: '/job-document', label: '취업서류', icon: '📄' },
-      { path: '/self-introduction', label: '자기소개서', icon: '✍️' },
+      { path: '/resume-management', label: '이력관리', icon: '📝' },
       { path: '/external-profiles', label: '외부 이력 관리', icon: '🔗' },
-      { path: '/weak-points', label: '부족한점', icon: '💪' },
+    ]
+  },
+  {
+    label: '스펙관리',
+    icon: '🎓',
+    path: '/spec-schedule',
+    children: [
+      { path: '/spec-schedule', label: '스펙 일정', icon: '📅' },
     ]
   },
   {

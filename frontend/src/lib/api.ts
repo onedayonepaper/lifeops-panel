@@ -321,4 +321,33 @@ export const api = {
     })
     return handleResponse(response)
   },
+
+  // ============ Report PDF ============
+  async downloadReportPdf(summary: Record<string, unknown>): Promise<void> {
+    const res = await fetch(`${API_URL}/api/report/prepare`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary }),
+    })
+    if (!res.ok) throw new Error(`PDF 준비 실패: ${res.status}`)
+    const { token } = await res.json()
+    // 숨겨진 iframe으로 다운로드 (Chrome 다운로드 기록 + 파인더 위치 추적)
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.src = `${API_URL}/api/report/pdf/${token}`
+    document.body.appendChild(iframe)
+    setTimeout(() => document.body.removeChild(iframe), 30000)
+  },
+
+  // ============ AI Evaluation ============
+  async evaluateStatus(summary: Record<string, unknown>): Promise<any> {
+    const response = await fetch(`${API_URL}/api/evaluate`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary }),
+    })
+    return handleResponse(response)
+  },
 }

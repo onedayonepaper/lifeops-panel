@@ -43,7 +43,7 @@ export const SHEET_CONFIGS = {
   },
   appliedCompany: {
     sheetName: '지원회사',
-    headers: ['id', 'companyName', 'position', 'appliedDate', 'status', 'deadline', 'notes', 'result', 'url']
+    headers: ['id', 'companyName', 'position', 'appliedDate', 'status', 'deadline', 'notes', 'result', 'url', 'driveUrl', 'schedule']
   },
   weakPoints: {
     sheetName: '부족한점',

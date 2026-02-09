@@ -1,11 +1,8 @@
 import { PageHeader } from '../components/PageHeader'
 
-export default function ProfilePage() {
+export function ProfileContent() {
   return (
-    <div>
-      <PageHeader icon="🧠" title="프로필" />
-
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* 강점 섹션 */}
         <div className="bg-gray-800 rounded-2xl p-6">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
@@ -178,6 +175,14 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <div>
+      <PageHeader icon="🧠" title="프로필" />
+      <ProfileContent />
     </div>
   )
 }
