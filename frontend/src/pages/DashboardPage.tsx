@@ -155,6 +155,63 @@ export function DashboardPage() {
         </div>
       ) : (
         <>
+          {/* 오늘의 시간표 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">🕐</span>
+              <span className="text-sm font-medium text-white">오늘의 시간표</span>
+              <span className="text-[10px] text-gray-500 ml-1">05:00 기상 → 21:00 취침</span>
+            </div>
+            <div className="space-y-0.5">
+              {[...todayLogs]
+                .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+                .filter(log => routineLocationFilter === '전체' || log.location === routineLocationFilter)
+                .map(log => (
+                <div
+                  key={`tt-${log.id}`}
+                  className={`flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors ${
+                    log.completed ? 'opacity-40' : 'hover:bg-gray-700/50'
+                  }`}
+                >
+                  <span className={`font-mono w-[90px] flex-shrink-0 ${
+                    log.completed ? 'text-gray-600' : 'text-emerald-400'
+                  }`}>
+                    {log.time || '--:--'}
+                  </span>
+                  <span className={`flex-1 truncate ${
+                    log.completed ? 'text-gray-600 line-through' : 'text-gray-300'
+                  }`}>
+                    {log.label.replace(/^\([^)]+\)\s*/, '')}
+                  </span>
+                  {log.location && (
+                    <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${
+                      log.location === '독서실' ? 'bg-blue-500/15 text-blue-400' : 'bg-amber-500/15 text-amber-400'
+                    }`}>
+                      {log.location}
+                    </span>
+                  )}
+                  {log.completed && <span className="text-[10px]">✅</span>}
+                </div>
+              ))}
+              {routineLocationFilter === '전체' && (
+                <>
+                  <div className="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-500">
+                    <span className="font-mono w-[90px] flex-shrink-0 text-yellow-500/60">12:20~13:00</span>
+                    <span>🍚 점심시간</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-500">
+                    <span className="font-mono w-[90px] flex-shrink-0 text-yellow-500/60">20:30~21:00</span>
+                    <span>🚿 샤워 + 취침 준비</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-500">
+                    <span className="font-mono w-[90px] flex-shrink-0 text-yellow-500/60">21:00~21:30</span>
+                    <span>😴 취침</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* 오늘 루틴 */}
           <div className="bg-gray-800 rounded-xl p-4 mb-3">
             <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/plan')}>
