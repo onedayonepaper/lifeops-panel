@@ -196,10 +196,6 @@ export function DashboardPage() {
               {routineLocationFilter === '전체' && (
                 <>
                   <div className="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-500">
-                    <span className="font-mono w-[90px] flex-shrink-0 text-yellow-500/60">12:20~13:00</span>
-                    <span>🍚 점심시간</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-500">
                     <span className="font-mono w-[90px] flex-shrink-0 text-yellow-500/60">20:30~21:00</span>
                     <span>🚿 샤워 + 취침 준비</span>
                   </div>
