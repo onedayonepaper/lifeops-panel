@@ -26,7 +26,8 @@ const navItems: NavEntry[] = [
     icon: '📋',
     path: '/plan',
     children: [
-      { path: '/today', label: '오늘 카드', icon: '🌅' },
+      { path: '/routine', label: '오늘의 루틴', icon: '📋' },
+      { path: '/today-tasks', label: '오늘 할일', icon: '✅' },
       { path: '/calendar', label: '캘린더', icon: '📅' },
       { path: '/tasks', label: '할일', icon: '✅' },
       { path: '/life-anchors', label: '반복 일정', icon: '🔔' },
@@ -57,7 +58,6 @@ const navItems: NavEntry[] = [
     icon: '🚀',
     path: '/career',
     children: [
-      { path: '/apply', label: '채용공고', icon: '🎯' },
       { path: '/applied-company', label: '지원회사', icon: '📨' },
       { path: '/job-documents', label: '취업지원모음', icon: '📂' },
     ]

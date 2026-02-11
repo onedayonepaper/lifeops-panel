@@ -66,16 +66,21 @@ export function DashboardPage() {
     SHEET_CONFIGS.appliedCompany, rowToCompany, companyToRow
   )
   const { stats: routineStats, todayLogs, toggleItem } = useDailyRoutineSheet()
-  const { tasks, isLoading: tasksLoading, toggleTask, addTask } = useTodayTasksSheet()
+  const { tasks, isLoading: tasksLoading, toggleTask, addTask, deleteAllTasks } = useTodayTasksSheet()
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [routineLocationFilter, setRoutineLocationFilter] = useState<'전체' | '독서실' | '집'>('전체')
 
   // Merge companies
   const companies = useMemo(() => {
     if (!isSignedIn || companiesLoading) return INITIAL_COMPANIES
     if (companiesFromSheet.length === 0) return INITIAL_COMPANIES
-    const sheetIds = new Set(companiesFromSheet.map(c => c.id))
-    const missing = INITIAL_COMPANIES.filter(c => !sheetIds.has(c.id))
-    return [...companiesFromSheet, ...missing]
+    // ID 기준 중복 제거
+    const seen = new Set<string>()
+    return companiesFromSheet.filter(c => {
+      if (seen.has(c.id)) return false
+      seen.add(c.id)
+      return true
+    })
   }, [companiesFromSheet, companiesLoading, isSignedIn])
 
   // Build summary
@@ -150,6 +155,105 @@ export function DashboardPage() {
         </div>
       ) : (
         <>
+          {/* 오늘 루틴 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/plan')}>
+              <span className="text-lg">📋</span>
+              <span className="text-sm font-medium text-white">오늘 루틴</span>
+              <span className={`text-xs font-bold ml-1 ${
+                summary.routine.percentage >= 80 ? 'text-green-400' :
+                summary.routine.percentage >= 50 ? 'text-yellow-400' : 'text-red-400'
+              }`}>{summary.routine.percentage}%</span>
+              <span className="text-gray-500 text-xs ml-auto">›</span>
+            </div>
+            <div className="flex gap-1.5 mb-3">
+              {(['전체', '독서실', '집'] as const).map(loc => (
+                <button
+                  key={loc}
+                  onClick={() => setRoutineLocationFilter(loc)}
+                  className={`text-[11px] px-2 py-1 rounded-full transition-colors ${
+                    routineLocationFilter === loc
+                      ? loc === '독서실' ? 'bg-blue-500/30 text-blue-400'
+                        : loc === '집' ? 'bg-amber-500/30 text-amber-400'
+                        : 'bg-gray-600 text-white'
+                      : 'bg-gray-700/50 text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {loc === '독서실' ? '📖 독서실' : loc === '집' ? '🏠 집' : '전체'}
+                </button>
+              ))}
+            </div>
+            <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden mb-3">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  summary.routine.percentage >= 80 ? 'bg-green-500' :
+                  summary.routine.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${summary.routine.percentage}%` }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              {todayLogs.filter(log => routineLocationFilter === '전체' || log.location === routineLocationFilter).map(log => (
+                <button key={log.id} onClick={() => toggleItem(log.id)} className="w-full text-left hover:opacity-80 transition-opacity">
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <span className={log.completed ? 'text-green-400' : 'text-gray-600'}>{log.completed ? '✓' : '○'}</span>
+                    <span className={log.completed ? 'text-gray-500 line-through' : 'text-gray-400'}>{log.label}</span>
+                    {log.location && (
+                      <span className={`text-[9px] px-1 py-0.5 rounded-full flex-shrink-0 ${
+                        log.location === '독서실'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-amber-500/20 text-amber-400'
+                      }`}>
+                        {log.location === '독서실' ? '📖독서실' : '🏠집'}
+                      </span>
+                    )}
+                  </div>
+                  {log.detail && (
+                    <div className="text-[10px] text-gray-600 ml-4 mt-0.5 leading-tight">{log.detail}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 오늘 할일 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/plan')}>
+              <span className="text-lg">✅</span>
+              <span className="text-sm font-medium text-white">오늘 할일</span>
+              <span className="text-xs font-bold text-white ml-1">{summary.routine.taskCompleted}/{summary.routine.taskTotal}</span>
+              {tasks.length > 0 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteAllTasks() }}
+                  className="ml-auto text-[10px] text-gray-500 hover:text-red-400 transition-colors px-1.5 py-0.5 rounded hover:bg-red-500/10"
+                >
+                  전체삭제
+                </button>
+              )}
+              <span className="text-gray-500 text-xs">›</span>
+            </div>
+            {tasks.length > 0 && (
+              <div className="space-y-1 mb-2">
+                {tasks.map(task => (
+                  <button key={task.id} onClick={() => toggleTask(task.id, !task.completed)} className="flex items-center gap-1.5 text-xs w-full text-left hover:opacity-80 transition-opacity">
+                    <span className={task.completed ? 'text-green-400' : 'text-gray-600'}>{task.completed ? '✓' : '○'}</span>
+                    <span className={task.completed ? 'text-gray-500 line-through' : 'text-gray-400'}>{task.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <form onSubmit={async (e) => { e.preventDefault(); if (!newTaskTitle.trim()) return; await addTask(newTaskTitle.trim()); setNewTaskTitle('') }} className="flex gap-1">
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                placeholder="할일 추가..."
+                className="flex-1 min-w-0 bg-gray-700 text-gray-300 text-xs rounded px-2 py-1 placeholder-gray-600 outline-none focus:ring-1 focus:ring-blue-500/50"
+              />
+              <button type="submit" className="text-blue-400 text-xs px-1.5 hover:text-blue-300 flex-shrink-0">+</button>
+            </form>
+          </div>
+
           {/* 구직활동 */}
           <div className="bg-gray-800 rounded-xl p-4 mb-3">
             <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/applied-company')}>
@@ -230,71 +334,6 @@ export function DashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* 오늘 루틴 */}
-          <div className="bg-gray-800 rounded-xl p-4 mb-3">
-            <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/plan')}>
-              <span className="text-lg">📋</span>
-              <span className="text-sm font-medium text-white">오늘 루틴</span>
-              <span className={`text-xs font-bold ml-1 ${
-                summary.routine.percentage >= 80 ? 'text-green-400' :
-                summary.routine.percentage >= 50 ? 'text-yellow-400' : 'text-red-400'
-              }`}>{summary.routine.percentage}%</span>
-              <span className="text-gray-500 text-xs ml-auto">›</span>
-            </div>
-            <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden mb-3">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  summary.routine.percentage >= 80 ? 'bg-green-500' :
-                  summary.routine.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${summary.routine.percentage}%` }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              {todayLogs.map(log => (
-                <button key={log.id} onClick={() => toggleItem(log.id)} className="w-full text-left hover:opacity-80 transition-opacity">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className={log.completed ? 'text-green-400' : 'text-gray-600'}>{log.completed ? '✓' : '○'}</span>
-                    <span className={log.completed ? 'text-gray-500 line-through' : 'text-gray-400'}>{log.label}</span>
-                  </div>
-                  {log.detail && (
-                    <div className="text-[10px] text-gray-600 ml-4 mt-0.5 leading-tight">{log.detail}</div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 오늘 할일 */}
-          <div className="bg-gray-800 rounded-xl p-4 mb-3">
-            <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/plan')}>
-              <span className="text-lg">✅</span>
-              <span className="text-sm font-medium text-white">오늘 할일</span>
-              <span className="text-xs font-bold text-white ml-1">{summary.routine.taskCompleted}/{summary.routine.taskTotal}</span>
-              <span className="text-gray-500 text-xs ml-auto">›</span>
-            </div>
-            {tasks.length > 0 && (
-              <div className="space-y-1 mb-2">
-                {tasks.map(task => (
-                  <button key={task.id} onClick={() => toggleTask(task.id, !task.completed)} className="flex items-center gap-1.5 text-xs w-full text-left hover:opacity-80 transition-opacity">
-                    <span className={task.completed ? 'text-green-400' : 'text-gray-600'}>{task.completed ? '✓' : '○'}</span>
-                    <span className={task.completed ? 'text-gray-500 line-through' : 'text-gray-400'}>{task.title}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <form onSubmit={async (e) => { e.preventDefault(); if (!newTaskTitle.trim()) return; await addTask(newTaskTitle.trim()); setNewTaskTitle('') }} className="flex gap-1">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={e => setNewTaskTitle(e.target.value)}
-                placeholder="할일 추가..."
-                className="flex-1 min-w-0 bg-gray-700 text-gray-300 text-xs rounded px-2 py-1 placeholder-gray-600 outline-none focus:ring-1 focus:ring-blue-500/50"
-              />
-              <button type="submit" className="text-blue-400 text-xs px-1.5 hover:text-blue-300 flex-shrink-0">+</button>
-            </form>
           </div>
 
           {/* 재테크 */}

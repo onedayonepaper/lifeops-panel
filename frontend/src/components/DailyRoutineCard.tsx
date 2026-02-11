@@ -27,6 +27,7 @@ export function DailyRoutineCard() {
   const [showAddInput, setShowAddInput] = useState(false)
   const [newItemLabel, setNewItemLabel] = useState('')
   const [copied, setCopied] = useState(false)
+  const [locationFilter, setLocationFilter] = useState<'전체' | '독서실' | '집'>('전체')
 
   // 데이터 복사
   const copyToClipboard = async () => {
@@ -281,6 +282,23 @@ export function DailyRoutineCard() {
       {/* Routine Items */}
       {isExpanded && (
         <div className="space-y-4">
+          <div className="flex gap-1.5 mb-3">
+            {(['전체', '독서실', '집'] as const).map(loc => (
+              <button
+                key={loc}
+                onClick={() => setLocationFilter(loc)}
+                className={`text-[11px] px-2 py-1 rounded-full transition-colors ${
+                  locationFilter === loc
+                    ? loc === '독서실' ? 'bg-blue-500/30 text-blue-400'
+                      : loc === '집' ? 'bg-amber-500/30 text-amber-400'
+                      : 'bg-gray-600 text-white'
+                    : 'bg-gray-700/50 text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {loc === '독서실' ? '📖 독서실' : loc === '집' ? '🏠 집' : '전체'}
+              </button>
+            ))}
+          </div>
           <div className="rounded-xl p-3 bg-gray-700/30">
             {/* 항목 추가 입력 */}
             {showAddInput && (
@@ -325,7 +343,7 @@ export function DailyRoutineCard() {
                   오늘의 루틴이 없습니다
                 </p>
               ) : (
-                todayLogs.map(log => (
+                todayLogs.filter(log => locationFilter === '전체' || log.location === locationFilter).map(log => (
                   <div
                     key={log.id}
                     className={`group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700/50 transition-all ${
@@ -350,10 +368,19 @@ export function DailyRoutineCard() {
                     </button>
 
                     <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-medium ${
+                      <div className={`text-sm font-medium flex items-center gap-1.5 ${
                         log.completed ? 'text-gray-500 line-through' : 'text-white'
                       }`}>
                         {log.label}
+                        {log.location && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal flex-shrink-0 ${
+                            log.location === '독서실'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-amber-500/20 text-amber-400'
+                          }`}>
+                            {log.location === '독서실' ? '📖 독서실' : '🏠 집'}
+                          </span>
+                        )}
                       </div>
                       {log.detail && (
                         <div className="text-xs text-gray-500 truncate">

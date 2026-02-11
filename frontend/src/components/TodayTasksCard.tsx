@@ -72,6 +72,7 @@ export function TodayTasksCard() {
     toggleTask,
     postponeTask,
     deleteTask,
+    deleteAllTasks,
     addTask,
     spreadsheetUrl
   } = useTodayTasksSheet()
@@ -142,6 +143,15 @@ export function TodayTasksCard() {
           )}
         </h2>
         <div className="flex items-center gap-2">
+          {tasks.length > 0 && (
+            <button
+              onClick={deleteAllTasks}
+              className="text-[10px] text-gray-500 hover:text-red-400 transition-colors px-1.5 py-0.5 rounded hover:bg-red-500/10"
+              title="전체 삭제"
+            >
+              전체삭제
+            </button>
+          )}
           <button
             onClick={() => setIsAdding(true)}
             className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"

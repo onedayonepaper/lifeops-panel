@@ -198,6 +198,19 @@ const INITIAL_DATA: SpecItem[] = [
       '2차|2026-08-17|2026-09-11|2026-12-06|2027-01-25',
     ].join('\n')
   },
+  {
+    id: 'jpt',
+    name: 'JPT (일본어)',
+    category: 'lang',
+    status: 'not_started',
+    priority: 'low',
+    url: 'https://www.jpt.co.kr',
+    fee: '44,000원',
+    frequency: '매월 (연 12회)',
+    target: '600점 이상',
+    notes: '매월 시행, JLPT보다 응시 기회 많음',
+    schedules: ''
+  },
 ]
 
 function parseSchedules(raw: string) {

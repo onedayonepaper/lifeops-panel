@@ -40,9 +40,7 @@ function taskToRow(task: TodayTask): string[] {
 
 const TODAY = new Date().toISOString().split('T')[0]
 
-const INITIAL_TASKS: TodayTask[] = [
-  { id: 'init-1', title: 'KOSA 업데이트 하기', completed: false, due: TODAY, createdAt: new Date().toISOString() },
-]
+const INITIAL_TASKS: TodayTask[] = []
 
 export function useTodayTasksSheet() {
   const {
@@ -128,6 +126,16 @@ export function useTodayTasksSheet() {
     return deleteItem(taskId)
   }, [deleteItem])
 
+  // 전체 삭제
+  const deleteAllTasks = useCallback(async (): Promise<boolean> => {
+    if (!confirm('오늘 할일을 모두 삭제할까요?')) return false
+    for (const task of data) {
+      await deleteItem(task.id)
+    }
+    await refresh()
+    return true
+  }, [data, deleteItem, refresh])
+
   // 내일로 미루기
   const postponeTask = useCallback(async (taskId: string): Promise<boolean> => {
     const task = data.find(t => t.id === taskId)
@@ -153,6 +161,7 @@ export function useTodayTasksSheet() {
     addTask,
     toggleTask,
     deleteTask,
+    deleteAllTasks,
     postponeTask,
     spreadsheetUrl
   }

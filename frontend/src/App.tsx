@@ -14,7 +14,6 @@ import { CalendarPage } from './pages/CalendarPage'
 import { TasksPage } from './pages/TasksPage'
 import { BucketListPage } from './pages/BucketListPage'
 import { StudyJournalPage } from './pages/StudyJournalPage'
-import { ApplyPage } from './pages/ApplyPage'
 import { CompanyPage } from './pages/CompanyPage'
 import EmploymentPage from './pages/EmploymentPage'
 import { LifeAnchorsPage } from './pages/LifeAnchorsPage'
@@ -109,17 +108,17 @@ function Layout({ children }: { children: ReactNode }) {
   )
 }
 
-function HomePage() {
-  // Request notification permission on mount
-  useEffect(() => {
-    requestNotificationPermission()
-  }, [])
-
+function RoutinePage() {
   return (
     <div className="space-y-4">
-      {/* 오늘의 루틴 */}
       <DailyRoutineCard />
-      {/* 오늘 할일 */}
+    </div>
+  )
+}
+
+function TodayTasksPage() {
+  return (
+    <div className="space-y-4">
       <TodayTasksCard />
     </div>
   )
@@ -136,7 +135,8 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/today" element={<HomePage />} />
+            <Route path="/routine" element={<RoutinePage />} />
+            <Route path="/today-tasks" element={<TodayTasksPage />} />
             <Route path="/plan" element={<PlanPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/tasks" element={<TasksPage />} />
@@ -144,7 +144,6 @@ function App() {
             <Route path="/study-journal" element={<StudyJournalPage />} />
             <Route path="/career" element={<CareerPage />} />
             <Route path="/employment" element={<EmploymentPage />} />
-            <Route path="/apply" element={<ApplyPage />} />
             <Route path="/company" element={<CompanyPage />} />
             <Route path="/applied-company" element={<AppliedCompanyPage />} />
             <Route path="/japanese" element={<JapanesePage />} />
