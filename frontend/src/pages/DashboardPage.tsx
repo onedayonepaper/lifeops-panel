@@ -159,11 +159,12 @@ export function DashboardPage() {
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">🕐</span>
               <span className="text-sm font-medium text-white">오늘의 시간표</span>
-              <span className="text-[10px] text-gray-500 ml-1">05:00 기상 → 21:00 취침</span>
+              <span className="text-[10px] text-gray-500 ml-1">12:00 시작 → 21:00 취침</span>
             </div>
             <div className="space-y-0.5">
               {(() => {
                 const filtered = [...todayLogs]
+                  .filter(log => (log.time || '') >= '12:00')
                   .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
                 const exerciseLogs = filtered.filter(l => l.label.startsWith('(건강)'))
                 const studyLogs = filtered.filter(l => l.label.startsWith('(스펙)'))
