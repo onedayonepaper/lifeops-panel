@@ -1,7 +1,75 @@
 import { useState } from 'react'
 import { useDailyRoutineSheet } from '../hooks/useDailyRoutineSheet'
-import { useGoogleCalendar } from '../hooks/useGoogleCalendar'
-import { useGoogleAuth } from '../contexts/GoogleAuthContext'
+import type { RoutineLogItem } from '../hooks/useDailyRoutineSheet'
+
+const SECTIONS = [
+  { key: '건강', icon: '💪', title: '운동 루틴', prefix: '(건강) ' },
+  { key: '스펙', icon: '📚', title: '공부 루틴', prefix: '(스펙) ' },
+  { key: '취업', icon: '💼', title: '취업 루틴', prefix: '(취업) ' },
+  { key: '수익화', icon: '🛠️', title: '프로젝트 루틴', prefix: '(수익화) ' },
+] as const
+
+function RoutineSection({
+  icon,
+  title,
+  logs,
+  prefix,
+  toggleItem,
+  isSaving,
+}: {
+  icon: string
+  title: string
+  logs: RoutineLogItem[]
+  prefix: string
+  toggleItem: (id: string) => void
+  isSaving: boolean
+}) {
+  const completed = logs.filter(l => l.completed).length
+
+  return (
+    <div className="bg-gray-800 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-lg">{icon}</span>
+        <span className="text-sm font-medium text-white">{title}</span>
+        <span className="text-[10px] text-gray-500">{completed}/{logs.length}</span>
+      </div>
+      <div className="space-y-1">
+        {logs.map(log => (
+          <div
+            key={log.id}
+            className={`group flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-700/50 transition-all ${
+              log.completed ? 'opacity-50' : ''
+            }`}
+          >
+            <button
+              onClick={() => toggleItem(log.id)}
+              disabled={isSaving}
+              className={`w-4.5 h-4.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                log.completed
+                  ? 'bg-emerald-700 border-emerald-500 text-white'
+                  : 'border-gray-500 hover:border-emerald-400'
+              }`}
+            >
+              {log.completed && (
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+            <div className="flex-1 min-w-0">
+              <span className={`text-xs ${log.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                {log.label.replace(prefix, '')}
+              </span>
+              {log.detail && (
+                <div className="text-[10px] text-gray-600 truncate mt-0.5">{log.detail}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function DailyRoutineCard() {
   const {
@@ -11,155 +79,23 @@ export function DailyRoutineCard() {
     isSignedIn,
     signIn,
     toggleItem,
-    addItem,
-    removeItem,
-    postponeItem,
+    resetToday,
     stats,
-    spreadsheetUrl
   } = useDailyRoutineSheet()
 
-  const { addBatchEvents } = useGoogleCalendar()
-  const { accessToken, userEmail } = useGoogleAuth()
-
   const [isExpanded, setIsExpanded] = useState(true)
-  const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
-  const [isSendingEmail, setIsSendingEmail] = useState(false)
-  const [showAddInput, setShowAddInput] = useState(false)
-  const [newItemLabel, setNewItemLabel] = useState('')
-  const [copied, setCopied] = useState(false)
-  const [locationFilter, setLocationFilter] = useState<'전체' | '독서실' | '집'>('전체')
 
-  // 데이터 복사
-  const copyToClipboard = async () => {
-    const text = todayLogs.map(log => `• ${log.label}`).join('\n')
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  // 루틴을 이메일로 보내기
-  const sendRoutineEmail = async () => {
-    if (!accessToken || !userEmail || todayLogs.length === 0 || isSendingEmail) return
-
-    setIsSendingEmail(true)
-
-    const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
-    const completedCount = todayLogs.filter(l => l.completed).length
-
-    const htmlBody = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a2e; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">🚀 LifeOps - 오늘의 루틴</h2>
-        <p style="color: #666; font-size: 14px;">${today} | 진행률: ${stats.percentage}% (${completedCount}/${stats.total})</p>
-        <div style="margin-top: 16px;">
-          ${todayLogs.map(log => `
-            <div style="padding: 12px 16px; margin: 8px 0; background: ${log.completed ? '#f0fdf4' : '#fafafa'}; border-radius: 8px; border-left: 4px solid ${log.completed ? '#22c55e' : '#94a3b8'};">
-              <div style="font-size: 15px; color: #1a1a2e; ${log.completed ? 'text-decoration: line-through; color: #9ca3af;' : ''}">
-                ${log.completed ? '✅' : '⬜'} ${log.label}
-              </div>
-              ${log.detail ? `<div style="font-size: 13px; color: #6b7280; margin-top: 4px;">${log.detail}</div>` : ''}
-            </div>
-          `).join('')}
-        </div>
-        <div style="margin-top: 20px; padding: 12px; background: #eff6ff; border-radius: 8px; text-align: center;">
-          <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${stats.percentage}%</div>
-          <div style="font-size: 13px; color: #6b7280;">오늘 달성률</div>
-        </div>
-        <p style="margin-top: 20px; font-size: 12px; color: #9ca3af; text-align: center;">LifeOps Panel에서 발송</p>
-      </div>
-    `
-
-    const subject = `📋 오늘의 루틴 - ${today} (${stats.percentage}%)`
-    const rawEmail = [
-      `To: ${userEmail}`,
-      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
-      'Content-Type: text/html; charset=UTF-8',
-      '',
-      htmlBody
-    ].join('\r\n')
-
-    const encodedMessage = btoa(unescape(encodeURIComponent(rawEmail)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '')
-
-    try {
-      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ raw: encodedMessage })
-      })
-
-      if (response.ok) {
-        alert('📧 루틴이 이메일로 전송되었습니다!')
-      } else {
-        const err = await response.json()
-        if (err.error?.code === 403 || err.error?.code === 401) {
-          alert('Gmail 권한이 필요합니다. 로그아웃 후 다시 로그인해주세요.')
-        } else {
-          alert('이메일 전송에 실패했습니다.')
-        }
-        console.error('[Email] Send error:', err)
-      }
-    } catch (err) {
-      console.error('[Email] Error:', err)
-      alert('이메일 전송 중 오류가 발생했습니다.')
-    }
-
-    setIsSendingEmail(false)
-  }
-
-  // 루틴을 캘린더에 추가
-  const addRoutineToCalendar = async () => {
-    if (todayLogs.length === 0 || isAddingToCalendar) return
-
-    setIsAddingToCalendar(true)
-
-    const today = new Date().toISOString().split('T')[0]
-
-    // 시간표 정의 (순서대로 1시간씩)
-    const startHour = 9
-    const batchEvents = todayLogs
-      .filter(log => !log.completed)
-      .map((log, index) => ({
-        title: `🎯 ${log.label}`,
-        startTime: `${String(startHour + index).padStart(2, '0')}:00`,
-        endTime: `${String(startHour + index + 1).padStart(2, '0')}:00`,
-      }))
-
-    const result = await addBatchEvents(today, batchEvents)
-
-    setIsAddingToCalendar(false)
-
-    if (result.success > 0) {
-      alert(`${result.success}개 루틴이 캘린더에 추가되었습니다!`)
-    } else {
-      alert('캘린더 추가에 실패했습니다.')
-    }
-  }
-
-  // 로그인되지 않은 경우
   if (!isSignedIn) {
     return (
-      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg">
+      <div className="bg-gray-800 rounded-xl p-4 shadow-lg">
         <div className="text-center space-y-4">
           <div className="text-4xl">📋</div>
           <h2 className="text-xl font-bold text-white">오늘의 루틴</h2>
-          <p className="text-gray-400 text-sm">
-            Google Sheets와 연동하여 루틴을 관리하세요
-          </p>
+          <p className="text-gray-400 text-sm">Google Sheets와 연동하여 루틴을 관리하세요</p>
           <button
             onClick={signIn}
-            className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
             Google 계정으로 시작하기
           </button>
         </div>
@@ -167,16 +103,14 @@ export function DailyRoutineCard() {
     )
   }
 
-  // 로딩 중
   if (isLoading) {
     return (
-      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg">
+      <div className="bg-gray-800 rounded-xl p-4 shadow-lg">
         <div className="text-center space-y-4">
           <div className="text-4xl animate-pulse">📋</div>
           <h2 className="text-xl font-bold text-white">오늘의 루틴</h2>
-          <p className="text-gray-400 text-sm">데이터를 불러오는 중...</p>
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         </div>
       </div>
@@ -184,259 +118,74 @@ export function DailyRoutineCard() {
   }
 
   return (
-    <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        >
-          <span className="text-xl">📋</span>
-          <span className="text-lg font-bold text-white">오늘의 루틴</span>
-          {stats.total > 0 && (
-            <span className="text-sm font-normal text-gray-400">
-              {stats.completed}/{stats.total}
-            </span>
-          )}
-        </button>
-        <div className="flex items-center gap-2">
-          {/* 항목 추가 */}
-          <button
-            onClick={() => setShowAddInput(!showAddInput)}
-            className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
-              showAddInput ? 'text-blue-400' : 'text-gray-400 hover:text-white'
-            }`}
-            title="항목 추가"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-          {/* 복사 */}
-          <button
-            onClick={copyToClipboard}
-            className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
-              copied ? 'text-green-400' : 'text-gray-400 hover:text-white'
-            }`}
-            title="목록 복사"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {copied ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              )}
-            </svg>
-          </button>
-          {/* 이메일로 보내기 */}
-          <button
-            onClick={sendRoutineEmail}
-            disabled={isSendingEmail}
-            className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
-              isSendingEmail ? 'text-blue-400 animate-pulse' : 'text-gray-400 hover:text-white'
-            }`}
-            title="이메일로 보내기"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </button>
-          {/* 캘린더에 추가 */}
-          <button
-            onClick={addRoutineToCalendar}
-            disabled={isAddingToCalendar}
-            className={`p-1.5 rounded-lg hover:bg-gray-700 transition-colors ${
-              isAddingToCalendar ? 'text-green-400 animate-pulse' : 'text-gray-400 hover:text-white'
-            }`}
-            title="캘린더에 루틴 추가"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
-          {/* 구글 시트에서 보기 */}
-          {spreadsheetUrl && (
-            <a
-              href={spreadsheetUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 text-xs font-medium transition-colors flex items-center gap-1"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 11V9h-6V3H7c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-6h-8v-2h8zm-6-8 6 6h-6V3z"/>
-              </svg>
-              시트
-            </a>
-          )}
+    <div className="space-y-3">
+      {/* 전체 루틴 헤더 */}
+      <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
+        <div className="flex items-center gap-2 mb-2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <span className="text-lg">📋</span>
+            <span className="text-sm font-medium text-white">전체 루틴</span>
+          </button>
+          {(() => {
+            const pct = stats.percentage
+            return (
+              <>
+                <span className={`text-xs font-bold ml-1 ${
+                  pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400'
+                }`}>{pct}%</span>
+                <span className="text-[10px] text-gray-500">({stats.completed}/{stats.total})</span>
+              </>
+            )
+          })()}
+          <button
+            onClick={resetToday}
+            className="ml-auto text-[10px] text-gray-500 hover:text-red-400 transition-colors px-1.5 py-0.5 rounded hover:bg-red-500/10"
+          >
+            초기화
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
           >
             <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
         </div>
+        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+          {(() => {
+            const pct = stats.percentage
+            return (
+              <div
+                className={`h-full rounded-full transition-all ${
+                  pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${pct}%` }}
+              />
+            )
+          })()}
+        </div>
       </div>
 
-      {/* Routine Items */}
-      {isExpanded && (
-        <div className="space-y-4">
-          <div className="flex gap-1.5 mb-3">
-            {(['전체', '독서실', '집'] as const).map(loc => (
-              <button
-                key={loc}
-                onClick={() => setLocationFilter(loc)}
-                className={`text-[11px] px-2 py-1 rounded-full transition-colors ${
-                  locationFilter === loc
-                    ? loc === '독서실' ? 'bg-blue-500/30 text-blue-400'
-                      : loc === '집' ? 'bg-amber-500/30 text-amber-400'
-                      : 'bg-gray-600 text-white'
-                    : 'bg-gray-700/50 text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                {loc === '독서실' ? '📖 독서실' : loc === '집' ? '🏠 집' : '전체'}
-              </button>
-            ))}
-          </div>
-          <div className="rounded-xl p-3 bg-gray-700/30">
-            {/* 항목 추가 입력 */}
-            {showAddInput && (
-              <div className="mb-3 flex gap-2">
-                <input
-                  type="text"
-                  value={newItemLabel}
-                  onChange={(e) => setNewItemLabel(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newItemLabel.trim()) {
-                      addItem(newItemLabel)
-                      setNewItemLabel('')
-                      setShowAddInput(false)
-                    } else if (e.key === 'Escape') {
-                      setShowAddInput(false)
-                      setNewItemLabel('')
-                    }
-                  }}
-                  placeholder="새 루틴 입력 (Enter로 추가)"
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  autoFocus
-                />
-                <button
-                  onClick={() => {
-                    if (newItemLabel.trim()) {
-                      addItem(newItemLabel)
-                      setNewItemLabel('')
-                      setShowAddInput(false)
-                    }
-                  }}
-                  className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
-                >
-                  추가
-                </button>
-              </div>
-            )}
-
-            {/* Items */}
-            <div className="space-y-1.5">
-              {todayLogs.length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-4">
-                  오늘의 루틴이 없습니다
-                </p>
-              ) : (
-                todayLogs.filter(log => locationFilter === '전체' || log.location === locationFilter).map(log => (
-                  <div
-                    key={log.id}
-                    className={`group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700/50 transition-all ${
-                      log.completed ? 'opacity-50' : ''
-                    }`}
-                  >
-                    {/* 체크박스 */}
-                    <button
-                      onClick={() => toggleItem(log.id)}
-                      disabled={isSaving}
-                      className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                        log.completed
-                          ? 'bg-emerald-700 border-emerald-500 text-white'
-                          : 'border-gray-500 hover:border-emerald-400'
-                      }`}
-                    >
-                      {log.completed && (
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-medium flex items-center gap-1.5 ${
-                        log.completed ? 'text-gray-500 line-through' : 'text-white'
-                      }`}>
-                        {log.label}
-                        {log.location && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal flex-shrink-0 ${
-                            log.location === '독서실'
-                              ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-amber-500/20 text-amber-400'
-                          }`}>
-                            {log.location === '독서실' ? '📖 독서실' : '🏠 집'}
-                          </span>
-                        )}
-                      </div>
-                      {log.detail && (
-                        <div className="text-xs text-gray-500 truncate">
-                          {log.detail}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 액션 버튼들 */}
-                    {!log.completed && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* 내일로 미루기 */}
-                        <button
-                          onClick={() => postponeItem(log.id)}
-                          disabled={isSaving}
-                          className="text-xs text-gray-400 hover:text-yellow-400 transition-colors"
-                          title="내일로 미루기"
-                        >
-                          →내일
-                        </button>
-                        {/* 삭제 */}
-                        <button
-                          onClick={() => removeItem(log.routineId)}
-                          disabled={isSaving}
-                          className="p-1 rounded text-gray-500 hover:text-red-400 transition-colors"
-                          title="삭제"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 진행률 표시 */}
-          {stats.total > 0 && (
-            <div className="px-1">
-              <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                <span>진행률</span>
-                <span>{stats.percentage}%</span>
-              </div>
-              <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.percentage}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* 카테고리별 섹션 */}
+      {isExpanded && SECTIONS.map(section => {
+        const logs = todayLogs.filter(l => l.label.startsWith(`(${section.key})`))
+        if (logs.length === 0) return null
+        return (
+          <RoutineSection
+            key={section.key}
+            icon={section.icon}
+            title={section.title}
+            logs={logs}
+            prefix={section.prefix}
+            toggleItem={toggleItem}
+            isSaving={isSaving}
+          />
+        )
+      })}
     </div>
   )
 }
