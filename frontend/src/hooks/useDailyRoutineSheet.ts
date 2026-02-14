@@ -80,7 +80,7 @@ export function useDailyRoutineSheet() {
       routineId: r.id,
       label: r.label,
       detail: r.detail,
-      location: r.location,
+      location: r.location as '집' | '독서실' | undefined,
       time: r.time,
       date: today,
       completed: checkedState[r.id] || false,
@@ -88,7 +88,10 @@ export function useDailyRoutineSheet() {
     }))
   , [today, checkedState])
 
-  const templates: RoutineTemplate[] = FIXED_ROUTINES
+  const templates: RoutineTemplate[] = FIXED_ROUTINES.map(r => ({
+    ...r,
+    location: r.location as '집' | '독서실' | undefined
+  }))
 
   // 항목 토글
   const toggleItem = useCallback((logId: string) => {

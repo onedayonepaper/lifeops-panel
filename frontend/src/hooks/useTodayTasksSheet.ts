@@ -38,8 +38,6 @@ function taskToRow(task: TodayTask): string[] {
   ]
 }
 
-const TODAY = new Date().toISOString().split('T')[0]
-
 const INITIAL_TASKS: TodayTask[] = []
 
 export function useTodayTasksSheet() {
