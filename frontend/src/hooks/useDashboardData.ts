@@ -64,6 +64,8 @@ const SPEC_ITEMS: { name: string; status: string }[] = [
   { name: 'AWS SAA', status: 'not_started' },
   { name: 'JLPT', status: 'not_started' },
   { name: 'JPT', status: 'not_started' },
+  { name: '빅데이터분석기사', status: 'not_started' },
+  { name: '정보보안기사', status: 'not_started' },
 ]
 
 // 재테크 하드코딩 데이터

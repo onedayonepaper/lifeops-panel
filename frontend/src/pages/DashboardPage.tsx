@@ -65,10 +65,9 @@ export function DashboardPage() {
   const { data: companiesFromSheet, isLoading: companiesLoading, isSignedIn } = useLifeOpsSheets<AppliedCompany>(
     SHEET_CONFIGS.appliedCompany, rowToCompany, companyToRow
   )
-  const { stats: routineStats, todayLogs, toggleItem } = useDailyRoutineSheet()
+  const { stats: routineStats, todayLogs } = useDailyRoutineSheet()
   const { tasks, isLoading: tasksLoading, toggleTask, addTask, deleteAllTasks } = useTodayTasksSheet()
   const [newTaskTitle, setNewTaskTitle] = useState('')
-  const [routineLocationFilter, setRoutineLocationFilter] = useState<'전체' | '독서실' | '집'>('전체')
 
   // Merge companies
   const companies = useMemo(() => {
@@ -163,37 +162,56 @@ export function DashboardPage() {
               <span className="text-[10px] text-gray-500 ml-1">05:00 기상 → 21:00 취침</span>
             </div>
             <div className="space-y-0.5">
-              {[...todayLogs]
-                .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
-                .filter(log => routineLocationFilter === '전체' || log.location === routineLocationFilter)
-                .map(log => (
-                <div
-                  key={`tt-${log.id}`}
-                  className={`flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors ${
-                    log.completed ? 'opacity-40' : 'hover:bg-gray-700/50'
-                  }`}
-                >
-                  <span className={`font-mono w-[90px] flex-shrink-0 ${
-                    log.completed ? 'text-gray-600' : 'text-emerald-400'
-                  }`}>
-                    {log.time || '--:--'}
-                  </span>
-                  <span className={`flex-1 truncate ${
-                    log.completed ? 'text-gray-600 line-through' : 'text-gray-300'
-                  }`}>
-                    {log.label.replace(/^\([^)]+\)\s*/, '')}
-                  </span>
-                  {log.location && (
-                    <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${
-                      log.location === '독서실' ? 'bg-blue-500/15 text-blue-400' : 'bg-amber-500/15 text-amber-400'
+              {(() => {
+                const filtered = [...todayLogs]
+                  .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+                const exerciseLogs = filtered.filter(l => l.label.startsWith('(건강)'))
+                const studyLogs = filtered.filter(l => l.label.startsWith('(스펙)'))
+                const jobLogs = filtered.filter(l => l.label.startsWith('(취업)'))
+                const bizLogs = filtered.filter(l => l.label.startsWith('(수익화)'))
+                const groupEntries: { id: string; time: string; label: string; isGroup: boolean; completed: boolean; location?: string; sortTime: string }[] = []
+                if (exerciseLogs.length > 0) {
+                  groupEntries.push({ id: 'tt-exercise', time: exerciseLogs[0].time || '--:--', label: '💪 운동루틴', isGroup: true, completed: exerciseLogs.every(l => l.completed), sortTime: exerciseLogs[0].time || '' })
+                }
+                if (studyLogs.length > 0) {
+                  groupEntries.push({ id: 'tt-study', time: studyLogs[0].time || '--:--', label: '📚 공부루틴', isGroup: true, completed: studyLogs.every(l => l.completed), sortTime: studyLogs[0].time || '' })
+                }
+                if (jobLogs.length > 0) {
+                  groupEntries.push({ id: 'tt-job', time: jobLogs[0].time || '--:--', label: '💼 취업루틴', isGroup: true, completed: jobLogs.every(l => l.completed), sortTime: jobLogs[0].time || '' })
+                }
+                if (bizLogs.length > 0) {
+                  groupEntries.push({ id: 'tt-biz', time: bizLogs[0].time || '--:--', label: '🛠️ 프로젝트루틴', isGroup: true, completed: bizLogs.every(l => l.completed), sortTime: bizLogs[0].time || '' })
+                }
+                const allEntries = [...groupEntries].sort((a, b) => a.sortTime.localeCompare(b.sortTime))
+                return allEntries.map(entry => (
+                  <div
+                    key={entry.id}
+                    className={`flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors ${
+                      entry.completed ? 'opacity-40' : 'hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <span className={`font-mono w-[90px] flex-shrink-0 ${
+                      entry.completed ? 'text-gray-600' : 'text-emerald-400'
                     }`}>
-                      {log.location}
+                      {entry.time}
                     </span>
-                  )}
-                  {log.completed && <span className="text-[10px]">✅</span>}
-                </div>
-              ))}
-              {routineLocationFilter === '전체' && (
+                    <span className={`flex-1 truncate ${
+                      entry.completed ? 'text-gray-600 line-through' : entry.isGroup ? 'text-orange-300' : 'text-gray-300'
+                    }`}>
+                      {entry.label}
+                    </span>
+                    {'location' in entry && entry.location && (
+                      <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${
+                        entry.location === '독서실' ? 'bg-blue-500/15 text-blue-400' : 'bg-amber-500/15 text-amber-400'
+                      }`}>
+                        {entry.location}
+                      </span>
+                    )}
+                    {entry.completed && <span className="text-[10px]">✅</span>}
+                  </div>
+                ))
+              })()}
+              {(
                 <>
                   <div className="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-500">
                     <span className="font-mono w-[90px] flex-shrink-0 text-yellow-500/60">20:30~21:00</span>
@@ -208,66 +226,123 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* 오늘 루틴 */}
-          <div className="bg-gray-800 rounded-xl p-4 mb-3">
-            <div className="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/plan')}>
+          {/* 전체 루틴 */}
+          <div className="bg-gray-800/50 rounded-xl p-3 mb-3 border border-gray-700/50">
+            <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">📋</span>
-              <span className="text-sm font-medium text-white">오늘 루틴</span>
-              <span className={`text-xs font-bold ml-1 ${
-                summary.routine.percentage >= 80 ? 'text-green-400' :
-                summary.routine.percentage >= 50 ? 'text-yellow-400' : 'text-red-400'
-              }`}>{summary.routine.percentage}%</span>
-              <span className="text-gray-500 text-xs ml-auto">›</span>
-            </div>
-            <div className="flex gap-1.5 mb-3">
-              {(['전체', '독서실', '집'] as const).map(loc => (
-                <button
-                  key={loc}
-                  onClick={() => setRoutineLocationFilter(loc)}
-                  className={`text-[11px] px-2 py-1 rounded-full transition-colors ${
-                    routineLocationFilter === loc
-                      ? loc === '독서실' ? 'bg-blue-500/30 text-blue-400'
-                        : loc === '집' ? 'bg-amber-500/30 text-amber-400'
-                        : 'bg-gray-600 text-white'
-                      : 'bg-gray-700/50 text-gray-500 hover:text-gray-300'
-                  }`}
-                >
-                  {loc === '독서실' ? '📖 독서실' : loc === '집' ? '🏠 집' : '전체'}
-                </button>
-              ))}
+              <span className="text-sm font-medium text-white">전체 루틴</span>
+              {(() => {
+                const done = todayLogs.filter(l => l.completed).length
+                const pct = todayLogs.length > 0 ? Math.round((done / todayLogs.length) * 100) : 0
+                return (
+                  <>
+                    <span className={`text-xs font-bold ml-1 ${
+                      pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>{pct}%</span>
+                    <span className="text-[10px] text-gray-500">({done}/{todayLogs.length})</span>
+                  </>
+                )
+              })()}
             </div>
             <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden mb-3">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  summary.routine.percentage >= 80 ? 'bg-green-500' :
-                  summary.routine.percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${summary.routine.percentage}%` }}
-              />
+              {(() => {
+                const done = todayLogs.filter(l => l.completed).length
+                const pct = todayLogs.length > 0 ? Math.round((done / todayLogs.length) * 100) : 0
+                return (
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                )
+              })()}
             </div>
-            <div className="space-y-1.5">
-              {todayLogs.filter(log => routineLocationFilter === '전체' || log.location === routineLocationFilter).map(log => (
-                <button key={log.id} onClick={() => toggleItem(log.id)} className="w-full text-left hover:opacity-80 transition-opacity">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className={log.completed ? 'text-green-400' : 'text-gray-600'}>{log.completed ? '✓' : '○'}</span>
-                    <span className={log.completed ? 'text-gray-500 line-through' : 'text-gray-400'}>{log.label}</span>
-                    {log.location && (
-                      <span className={`text-[9px] px-1 py-0.5 rounded-full flex-shrink-0 ${
-                        log.location === '독서실'
-                          ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-amber-500/20 text-amber-400'
-                      }`}>
-                        {log.location === '독서실' ? '📖독서실' : '🏠집'}
-                      </span>
-                    )}
+
+          {/* 운동 루틴 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">💪</span>
+              <span className="text-sm font-medium text-white">운동 루틴</span>
+              <span className="text-[10px] text-gray-500">{todayLogs.filter(l => l.label.startsWith('(건강)')).length}개</span>
+            </div>
+            <div className="space-y-1">
+              {todayLogs.filter(log => log.label.startsWith('(건강)')).map(log => (
+                <div key={log.id} className="flex items-start gap-1.5 text-xs py-0.5">
+                  <span className="text-gray-500 mt-0.5">•</span>
+                  <div>
+                    <span className="text-gray-300">{log.label.replace('(건강) ', '')}</span>
+                    {log.detail && <div className="text-[10px] text-gray-600 mt-0.5 leading-tight">{log.detail}</div>}
                   </div>
-                  {log.detail && (
-                    <div className="text-[10px] text-gray-600 ml-4 mt-0.5 leading-tight">{log.detail}</div>
-                  )}
-                </button>
+                </div>
               ))}
             </div>
           </div>
+
+          {/* 공부 루틴 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📚</span>
+              <span className="text-sm font-medium text-white">공부 루틴</span>
+              <span className="text-[10px] text-gray-500">{todayLogs.filter(l => l.label.startsWith('(스펙)')).length}개</span>
+            </div>
+            <div className="space-y-1">
+              {todayLogs
+                .filter(log => log.label.startsWith('(스펙)'))
+                .map(log => (
+                <div key={log.id} className="flex items-start gap-1.5 text-xs py-0.5">
+                  <span className="text-gray-500 mt-0.5">•</span>
+                  <div>
+                    <span className="text-gray-300">{log.label.replace('(스펙) ', '')}</span>
+                    {log.detail && <div className="text-[10px] text-gray-600 mt-0.5 leading-tight">{log.detail}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 취업 루틴 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">💼</span>
+              <span className="text-sm font-medium text-white">취업 루틴</span>
+              <span className="text-[10px] text-gray-500">{todayLogs.filter(l => l.label.startsWith('(취업)')).length}개</span>
+            </div>
+            <div className="space-y-1">
+              {todayLogs.filter(log => log.label.startsWith('(취업)')).map(log => (
+                <div key={log.id} className="flex items-start gap-1.5 text-xs py-0.5">
+                  <span className="text-gray-500 mt-0.5">•</span>
+                  <div>
+                    <span className="text-gray-300">{log.label.replace('(취업) ', '')}</span>
+                    {log.detail && <div className="text-[10px] text-gray-600 mt-0.5 leading-tight">{log.detail}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 프로젝트 루틴 */}
+          <div className="bg-gray-800 rounded-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🛠️</span>
+              <span className="text-sm font-medium text-white">프로젝트 루틴</span>
+              <span className="text-[10px] text-gray-500">{todayLogs.filter(l => l.label.startsWith('(수익화)')).length}개</span>
+            </div>
+            <div className="space-y-1">
+              {todayLogs.filter(log => log.label.startsWith('(수익화)')).map(log => (
+                <div key={log.id} className="flex items-start gap-1.5 text-xs py-0.5">
+                  <span className="text-gray-500 mt-0.5">•</span>
+                  <div>
+                    <span className="text-gray-300">{log.label.replace('(수익화) ', '')}</span>
+                    {log.detail && <div className="text-[10px] text-gray-600 mt-0.5 leading-tight">{log.detail}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          </div>
+          {/* 전체 루틴 끝 */}
 
           {/* 오늘 할일 */}
           <div className="bg-gray-800 rounded-xl p-4 mb-3">

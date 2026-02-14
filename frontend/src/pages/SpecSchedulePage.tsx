@@ -211,6 +211,32 @@ const INITIAL_DATA: SpecItem[] = [
     notes: '매월 시행, JLPT보다 응시 기회 많음',
     schedules: ''
   },
+  {
+    id: 'bigdata',
+    name: '빅데이터분석기사',
+    category: 'cert',
+    status: 'not_started',
+    priority: 'medium',
+    url: 'https://www.q-net.or.kr',
+    fee: '필기 19,400원 / 실기 22,600원',
+    frequency: '연 2~3회',
+    target: '취득',
+    notes: '데이터 수집·저장·처리·분석 및 시각화 역량 검증',
+    schedules: ''
+  },
+  {
+    id: 'info-security',
+    name: '정보보안기사',
+    category: 'cert',
+    status: 'not_started',
+    priority: 'medium',
+    url: 'https://www.q-net.or.kr',
+    fee: '필기 18,800원 / 실기 20,800원',
+    frequency: '연 2~3회',
+    target: '취득',
+    notes: '시스템·네트워크 보안, 암호학, 법규 등 정보보안 전문 자격',
+    schedules: ''
+  },
 ]
 
 function parseSchedules(raw: string) {
